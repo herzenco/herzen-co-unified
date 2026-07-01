@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node tests/site.test.mjs"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.2"
+  }
+}

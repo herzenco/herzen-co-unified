@@ -1,0 +1,31 @@
+# Herzen Co.
+
+Herzen Co. is a product leadership studio for founders, startups, and lean teams.
+
+Primary offer:
+- Fractional product leadership for teams that need senior product ownership before or instead of a full-time product hire.
+- Starting point: $2,000 per month.
+- Core work: product audit, roadmap ownership, backlog prioritization, sprint rituals, stakeholder alignment, delivery risk tracking, and product metrics.
+
+Supporting offers:
+- Custom product builds: technical discovery, MVPs, prototypes, web applications, internal tools, launch support, and handoff.
+- Custom project management solutions: heavier launch, operational, and cross-team delivery support when the work needs senior ownership.
+
+Best-fit customers:
+- Founder-led startups with product ambiguity or delivery drag.
+- Teams between product hires.
+- Companies with engineering capacity but unclear product ownership.
+- Small and midsize businesses that need custom systems without the cost or overhead of a full development team.
+
+Important pages:
+- Home: https://herzenco.com/
+- Product Leadership: https://herzenco.com/product-leadership/
+- Custom Builds: https://herzenco.com/custom-builds/
+- Pricing: https://herzenco.com/pricing/
+- Process: https://herzenco.com/process/
+- Resources: https://herzenco.com/resources/
+- FAQ: https://herzenco.com/faq/
+- Contact: https://herzenco.com/contact/
+
+Contact:
+- Email: hello@herzenco.com

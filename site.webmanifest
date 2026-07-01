@@ -1,0 +1,16 @@
+{
+  "name": "Herzen Co.",
+  "short_name": "Herzen Co.",
+  "description": "Product leadership, custom builds, and project management support.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfaf6",
+  "theme_color": "#17201c",
+  "icons": [
+    {
+      "src": "/assets/img/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    }
+  ]
+}
