@@ -1,0 +1,78 @@
+name: Deploy QA
+
+on:
+  push:
+    branches:
+      - development
+  workflow_dispatch:
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QA_URL: https://herzen-co-unified-qa.vercel.app
+  VERCEL_ORG_ID: team_5TSOBOtfAFPyjrRDDUENfyQd
+  VERCEL_PROJECT_ID: prj_CsClHWJtQS79mDZE9ECdJ3fwuqzy
+  VERCEL_PROJECT_NAME: herzen-co-unified
+  VERCEL_SCOPE: herzens-projects
+  VERCEL_CLI_VERSION: 54.18.7
+
+jobs:
+  deploy-qa:
+    name: Deploy development to QA
+    runs-on: ubuntu-latest
+    environment:
+      name: qa
+      url: ${{ env.QA_URL }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out development
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run site checks
+        run: npm test
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
+
+      - name: Link Vercel project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel link --yes --project "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
+
+      - name: Pull QA environment settings
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=preview --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
+
+      - name: Deploy QA preview
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          deployment_url="$(vercel deploy --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN")"
+          echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
+          echo "Preview deployment: $deployment_url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update stable QA alias
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel alias set "${{ steps.deploy.outputs.deployment_url }}" "${QA_URL#https://}" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
+
+      - name: Verify QA homepage
+        run: curl --fail --silent --show-error --head "$QA_URL/"
+
+      - name: Verify QA product page
+        run: curl --fail --silent --show-error --head "$QA_URL/product-leadership/"

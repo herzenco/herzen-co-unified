@@ -109,6 +109,7 @@ for (const file of publicFiles) {
 }
 
 const homepage = read("index.html");
+const packageJson = JSON.parse(read("package.json"));
 const siteScript = read("assets/js/main.js");
 const siteStyles = read("assets/css/styles.css");
 assert(/messy middle/i.test(homepage), "Homepage should use the editorial studio positioning phrase: messy middle");
@@ -117,7 +118,9 @@ assert(/<a class="button" href="\/contact\/">Book a call<\/a>/.test(homepage), "
 assert(!/See the primary offer/.test(homepage), "Homepage CTA should be concise and lead-focused");
 assert(/editorial-hero-media/.test(homepage), "Homepage hero image should use the editorial image wrapper");
 assert(/editorial-hero-media img[\s\S]*height: auto/.test(siteStyles), "Homepage hero image should not use fixed-height letterboxing");
+assert(packageJson.dependencies["@vercel/analytics"], "Site should include the Vercel Analytics package");
 assert(/\/_vercel\/insights\/script\.js/.test(siteScript), "Shared script should load Vercel Web Analytics");
+assert(/@vercel\/analytics/.test(siteScript), "Shared script should identify the Vercel Analytics SDK");
 assert(/Lead CTA Clicked/.test(siteScript), "Shared script should track lead CTA clicks");
 assert(/founder-working\.jpeg/.test(homepage), "Homepage should use the founder working portrait");
 assert(/founder-portrait\.jpeg/.test(read("about/index.html")), "About page should use the founder portrait");

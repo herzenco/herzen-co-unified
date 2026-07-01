@@ -1,13 +1,26 @@
-window.va = window.va || function () {
-  (window.vaq = window.vaq || []).push(arguments);
-};
+const loadVercelAnalytics = () => {
+  window.va = window.va || function () {
+    (window.vaq = window.vaq || []).push(arguments);
+  };
 
-if (!document.querySelector('script[src="/_vercel/insights/script.js"]')) {
+  if (document.querySelector('script[src="/_vercel/insights/script.js"]')) {
+    return;
+  }
+
   const analyticsScript = document.createElement("script");
   analyticsScript.defer = true;
   analyticsScript.src = "/_vercel/insights/script.js";
+  analyticsScript.dataset.sdkn = "@vercel/analytics";
+  analyticsScript.dataset.sdkv = "2.0.1";
+  analyticsScript.onerror = () => {
+    console.log(
+      "[Vercel Web Analytics] Failed to load script. Enable Web Analytics for the project and redeploy."
+    );
+  };
   document.head.appendChild(analyticsScript);
-}
+};
+
+loadVercelAnalytics();
 
 const navToggle = document.querySelector("[data-nav-toggle]");
 const navLinks = document.querySelector("[data-nav-links]");
