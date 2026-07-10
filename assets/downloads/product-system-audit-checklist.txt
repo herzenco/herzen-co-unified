@@ -1,0 +1,33 @@
+Herzen Co. Product System Audit Checklist
+
+Use this to identify the operating gaps that make product work feel reactive.
+
+1. Roadmap clarity
+- The next 30 days are tied to business outcomes.
+- Every roadmap item has an owner and a reason.
+- Tradeoffs are visible, not implied.
+
+2. Backlog quality
+- Old ideas are pruned or re-qualified.
+- Top items have acceptance criteria.
+- Customer signal and founder judgment are both represented.
+
+3. Sprint cadence
+- Planning creates decisions, not just a meeting record.
+- Reviews produce learning and next actions.
+- Risks and blockers are visible before they become surprises.
+
+4. Stakeholder alignment
+- Leadership, engineering, design, and vendors share one product thread.
+- Decisions are documented where the team can find them.
+- Escalation paths are clear.
+
+5. Metrics
+- The team knows which delivery, customer, revenue, or operational metric matters now.
+- Metrics are reviewed on a cadence.
+- Output and outcome are not confused.
+
+6. First 30-day reset
+- Pick the three highest-friction gaps.
+- Name the owner for each.
+- Decide what proof of improvement should exist in 30 days.

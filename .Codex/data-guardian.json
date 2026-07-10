@@ -1,0 +1,7 @@
+{
+  "project_name": "herzen-co-unified",
+  "databases": [],
+  "protected_branches": ["main", "production"],
+  "risk_level": "paranoid",
+  "notes": "Static marketing site push. Supabase helper files exist, but this push does not alter database code, schema, migrations, or data operations. Configure critical tables before future database work."
+}
