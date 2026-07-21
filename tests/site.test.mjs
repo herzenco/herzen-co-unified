@@ -26,6 +26,20 @@ const requiredFiles = [
   "assets/img/founder-working.jpeg",
   "assets/img/founder-seated.jpeg",
   "assets/img/founder-portrait.jpeg",
+  "assets/brand/logo-1a-black.png",
+  "assets/brand/logo-1a-white.png",
+  "assets/brand/logo-1e-black.png",
+  "assets/brand/logo-1e-white.png",
+  "assets/brand/mark-h-black.png",
+  "assets/brand/mark-h-white.png",
+  "assets/brand/wordmark-black.png",
+  "assets/brand/wordmark-white.png",
+  "assets/brand/icon.png",
+  "assets/brand/icon-mark.png",
+  "assets/brand/logo-black.png",
+  "assets/brand/logo-white.png",
+  "docs/design-system/Herzen-Co-logo-system.pdf",
+  "docs/design-system/Logos-Herzen-Co.zip",
 ];
 
 const legacyTerms = [
@@ -86,7 +100,12 @@ for (const page of pages) {
   assert(/<title>[^<]{15,70}<\/title>/i.test(html), `${page} needs a focused title tag`);
   assert(/<meta name="description" content="[^"]{50,170}"/i.test(html), `${page} needs a meta description`);
   assert(/<link rel="canonical" href="https:\/\/herzenco\.com\/[^"]*"/i.test(html), `${page} needs canonical URL`);
-  assert(html.includes('/assets/css/styles.css?v=20260701'), `${page} should load the current shared stylesheet`);
+  assert(html.includes('/assets/css/styles.css?v=20260721content1'), `${page} should load the current shared stylesheet`);
+  assert(html.includes('/assets/brand/logo-1a-black.png'), `${page} should use the approved primary logo in the header`);
+  assert(html.includes('/assets/brand/logo-1a-white.png'), `${page} should use the approved reversed logo in the footer`);
+  assert(!html.includes('/assets/brand/logo-black.png'), `${page} should not render the vertical black lockup`);
+  assert(!html.includes('/assets/brand/logo-white.png'), `${page} should not render the vertical white lockup`);
+  assert(html.includes('/assets/brand/icon.png'), `${page} should use the official icon export as the favicon`);
   assert(html.includes('/assets/js/main.js'), `${page} should load the shared site script`);
   assert(/<meta property="og:title" content="[^"]+"/i.test(html), `${page} needs OG title`);
   assert(/<meta property="og:description" content="[^"]+"/i.test(html), `${page} needs OG description`);
@@ -112,6 +131,10 @@ const homepage = read("index.html");
 const packageJson = JSON.parse(read("package.json"));
 const siteScript = read("assets/js/main.js");
 const siteStyles = read("assets/css/styles.css");
+assert(/--paper-50:\s*#f5efe4/i.test(siteStyles), "Design system should use the warm paper token");
+assert(/--ink-900:\s*#1c1813/i.test(siteStyles), "Design system should use the warm ink token");
+assert(/--clay-500:\s*#9c5c3e/i.test(siteStyles), "Design system should use the clay accent token");
+assert(/Newsreader/.test(siteStyles) && /Jost/.test(siteStyles), "Design system should load the editorial font pairing");
 assert(/messy middle/i.test(homepage), "Homepage should use the editorial studio positioning phrase: messy middle");
 assert(!/Answering the questions buyers ask first/i.test(homepage), "Homepage should not use generic buyer-question section framing");
 assert(/<a class="button" href="\/contact\/">Book a call<\/a>/.test(homepage), "Homepage primary CTA should collect leads through contact");
@@ -125,5 +148,11 @@ assert(/Lead CTA Clicked/.test(siteScript), "Shared script should track lead CTA
 assert(/founder-working\.jpeg/.test(homepage), "Homepage should use the founder working portrait");
 assert(/founder-portrait\.jpeg/.test(read("about/index.html")), "About page should use the founder portrait");
 assert(/founder-seated\.jpeg/.test(read("contact/index.html")), "Contact page should use the seated founder portrait");
+
+const resourcesPage = read("resources/index.html");
+assert(/class="resources-masthead"/.test(resourcesPage), "Resources should use the editorial masthead");
+assert(/class="featured-story"/.test(resourcesPage), "Resources should include a featured story");
+assert((resourcesPage.match(/class="article-card"/g) || []).length === 3, "Resources should include three latest-story cards");
+assert(!/class="resource-row"/.test(resourcesPage), "Resources should not use the old utility-list layout");
 
 console.log(`Verified ${pages.length} pages and ${publicFiles.length} public files.`);
