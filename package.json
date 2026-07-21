@@ -1,11 +1,12 @@
 {
   "private": true,
   "scripts": {
+    "build": "node scripts/sync-content.mjs && npm test && node scripts/prepare-public.mjs",
     "test": "node tests/site.test.mjs"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.108.2",
-    "@vercel/analytics": "^2.0.1"
+    "@vercel/analytics": "^2.0.1",
+    "marked": "18.0.7",
+    "sanitize-html": "2.17.6"
   }
 }

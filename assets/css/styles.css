@@ -927,3 +927,47 @@ textarea {
   object-fit: cover;
   background: transparent;
 }
+
+.article-shell {
+  width: min(860px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 88px 0 112px;
+}
+
+.article-header {
+  padding-bottom: 36px;
+  border-bottom: 1px solid var(--line);
+}
+
+.article-header h1 {
+  max-width: 14ch;
+}
+
+.article-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.article-body {
+  max-width: 720px;
+  padding-top: 42px;
+  font-size: 1.08rem;
+  line-height: 1.75;
+}
+
+.article-body h2,
+.article-body h3 {
+  margin-top: 2.2em;
+}
+
+.article-body p,
+.article-body ul,
+.article-body ol,
+.article-body blockquote {
+  margin: 1.2em 0;
+}
+
+.article-body img {
+  max-width: 100%;
+  height: auto;
+}
