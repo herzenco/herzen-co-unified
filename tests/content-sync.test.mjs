@@ -41,6 +41,7 @@ test("published content generates an index and article with metadata", async () 
   await generateContent({ rootDir: root, items });
   const index = await fs.readFile(path.join(root, "content/index.html"), "utf8");
   const article = await fs.readFile(path.join(root, "content/clearer-product-roadmaps/index.html"), "utf8");
+  const resources = await fs.readFile(path.join(root, "resources/index.html"), "utf8");
   assert.match(index, /Clearer Product Roadmaps/);
   assert.match(article, /<h1>Clearer Product Roadmaps<\/h1>/);
   assert.match(article, /Published <time/);
@@ -48,6 +49,8 @@ test("published content generates an index and article with metadata", async () 
   assert.match(article, /rel="canonical" href="https:\/\/herzenco\.com\/content\/clearer-product-roadmaps\//);
   assert.match(article, /application\/ld\+json/);
   assert.match(article, /A product roadmap workshop/);
+  assert.match(resources, /href="\/content\/clearer-product-roadmaps\//);
+  assert.match(resources, /Clearer Product Roadmaps/);
 });
 
 test("unpublished and other-property content is excluded", () => {

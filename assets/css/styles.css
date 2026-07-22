@@ -1877,6 +1877,18 @@ textarea:focus {
 
 .content-index-list { padding: var(--section-y) 0; }
 
+.resources-empty {
+  display: grid;
+  min-height: 240px;
+  place-items: center;
+  border-top: 1px solid var(--ink-900);
+  border-bottom: 1px solid var(--ink-900);
+  color: var(--ink-500);
+  text-align: center;
+}
+
+.resources-empty p { margin: 0; }
+
 .content-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

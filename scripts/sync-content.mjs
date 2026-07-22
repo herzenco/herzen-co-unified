@@ -201,6 +201,28 @@ function renderIndex(items, chrome) {
   });
 }
 
+function renderResourcesFeed(items) {
+  if (!items.length) return '<div class="resources-empty"><p>No field notes have been published yet.</p></div>';
+  const cards = items.map((item, index) => `
+            <article class="article-card">
+              <span class="article-number" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
+              <div class="article-meta"><span>Field notes</span><time datetime="${item.publishedAt}">${displayDate(item.publishedAt)}</time></div>
+              <h3><a href="/content/${item.slug}/">${escapeHtml(item.title)}</a></h3>
+              <p>${escapeHtml(item.excerpt)}</p>
+              <a class="story-link" href="/content/${item.slug}/">Read article <span aria-hidden="true">→</span></a>
+            </article>`).join("");
+  return `<div class="article-grid">${cards}
+          </div>`;
+}
+
+export function populateResourcesPage(template, items) {
+  const start = "<!-- CONTENT_ENGINE_RESOURCES_START -->";
+  const end = "<!-- CONTENT_ENGINE_RESOURCES_END -->";
+  const pattern = new RegExp(`${start}[\\s\\S]*?${end}`);
+  if (!pattern.test(template)) throw new Error("Resources page is missing its Content Engine insertion markers");
+  return template.replace(pattern, `${start}\n          ${renderResourcesFeed(items)}\n          ${end}`);
+}
+
 function renderArticle(item, chrome) {
   const canonical = `${SITE_URL}/content/${item.slug}/`;
   const hero = item.heroImageUrl
@@ -266,6 +288,10 @@ export async function generateContent({ rootDir = process.cwd(), items }) {
     await fs.mkdir(articleDir, { recursive: true });
     await fs.writeFile(path.join(articleDir, "index.html"), renderArticle(item, chrome));
   }
+  await fs.writeFile(
+    path.join(rootDir, "resources/index.html"),
+    populateResourcesPage(resourcesTemplate, items),
+  );
   const sitemapPath = path.join(rootDir, "sitemap.xml");
   const sitemap = await fs.readFile(sitemapPath, "utf8");
   await fs.writeFile(sitemapPath, updateSitemapXml(sitemap, items));

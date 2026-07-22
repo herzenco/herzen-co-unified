@@ -151,8 +151,8 @@ assert(/founder-seated\.jpeg/.test(read("contact/index.html")), "Contact page sh
 
 const resourcesPage = read("resources/index.html");
 assert(/class="resources-masthead"/.test(resourcesPage), "Resources should use the editorial masthead");
-assert(/class="featured-story"/.test(resourcesPage), "Resources should include a featured story");
-assert((resourcesPage.match(/class="article-card"/g) || []).length === 3, "Resources should include three latest-story cards");
+assert(/CONTENT_ENGINE_RESOURCES_START/.test(resourcesPage), "Resources should expose the Content Engine insertion point");
+assert(!/What is fractional product leadership\?/.test(resourcesPage), "Resources should not contain hardcoded editorial articles");
 assert(!/class="resource-row"/.test(resourcesPage), "Resources should not use the old utility-list layout");
 
 console.log(`Verified ${pages.length} pages and ${publicFiles.length} public files.`);
