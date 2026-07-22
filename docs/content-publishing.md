@@ -3,12 +3,12 @@
 The site remains static HTML, CSS, and JavaScript. Vercel runs `npm run build`,
 which fetches reviewed content before deployment and generates:
 
-- `/content/index.html`
-- `/content/{slug}/index.html`
+- `/resources/index.html` (generated article listing inside the preserved page)
+- `/resources/{slug}/index.html`
 
-Only records with `status: "published"` and property `herzenco` are rendered.
-The generator replaces the generated `content/` directory on every successful
-build and updates `sitemap.xml`.
+The public API already exposes only published records for property `herzenco`.
+The generator removes stale generated resource pages using its manifest, leaves
+manual website content untouched, and updates only the marked sitemap section.
 
 ## Vercel environment variables
 
@@ -16,6 +16,7 @@ Configure these for Production and Preview in the Vercel project settings:
 
 ```text
 CONTENT_ENGINE_URL=https://content.herzenco.co
+SITE_URL=https://herzenco.com
 PUBLISH_SECRET=
 DEPLOY_HOOK_URL=
 ```

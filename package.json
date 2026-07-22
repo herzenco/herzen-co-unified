@@ -3,7 +3,7 @@
   "scripts": {
     "sync-content": "node scripts/sync-content.mjs",
     "test": "node --test tests/*.test.mjs",
-    "build": "npm run sync-content && npm test"
+    "build": "npm run sync-content && npm test && node scripts/prepare-public.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
