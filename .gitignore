@@ -2,6 +2,10 @@ node_modules/
 .DS_Store
 .env
 .env.*
+!.env.example
 .vercel/
-resources/.content-engine-manifest.json
-public/
+/content/
+.codex/
+.vercel
+.env*
+!.env.example

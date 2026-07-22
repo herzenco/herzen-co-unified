@@ -4,12 +4,15 @@ Static HTML/CSS/JavaScript website deployed by Vercel.
 
 ## Content Engine integration
 
-The production build fetches published articles from the Herzen Content Engine, generates static pages under `resources/{slug}/`, updates the Resources listing and sitemap, runs the site checks, and assembles the `public/` deployment directory.
+The production build fetches published articles from the Herzen Content Engine,
+generates static pages under `content/{slug}/`, updates the Resources listing
+and sitemap, and runs the site checks. Vercel deploys the static repository root.
 
 Required Vercel build variables:
 
 - `CONTENT_ENGINE_URL=https://content.herzenco.co`
-- `SITE_URL=https://herzenco.com`
+- `PUBLISH_SECRET`
+- `DEPLOY_HOOK_URL`
 
 Run locally:
 

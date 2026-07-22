@@ -1,12 +1,13 @@
 {
   "private": true,
   "scripts": {
-    "build": "node scripts/sync-content.mjs && npm test && node scripts/prepare-public.mjs",
-    "test": "node tests/site.test.mjs"
+    "sync-content": "node scripts/sync-content.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "build": "npm run sync-content && npm test"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
-    "marked": "18.0.7",
-    "sanitize-html": "2.17.6"
+    "marked": "^16.4.2",
+    "sanitize-html": "^2.17.6"
   }
 }
