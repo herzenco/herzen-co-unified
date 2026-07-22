@@ -82,13 +82,22 @@ function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "docs" || entry.name === "tests" || entry.name === "node_modules") continue;
+      if (entry.name === "content" || entry.name === "docs" || entry.name === "tests" || entry.name === "node_modules") continue;
       out.push(...walk(full));
     } else if (publicExtensions.has(path.extname(entry.name))) {
       out.push(path.relative(root, full));
     }
   }
   return out;
+}
+
+function authoredContents(file) {
+  const contents = read(file);
+  if (file !== "resources/index.html") return contents;
+  return contents.replace(
+    /<!-- CONTENT_ENGINE_RESOURCES_START -->[\s\S]*?<!-- CONTENT_ENGINE_RESOURCES_END -->/,
+    "",
+  );
 }
 
 for (const file of requiredFiles) {
@@ -116,7 +125,7 @@ for (const page of pages) {
 
 const publicFiles = walk(root);
 for (const file of publicFiles) {
-  const contents = read(file);
+  const contents = authoredContents(file);
   for (const term of legacyTerms) {
     const pattern = new RegExp(term, "i");
     assert(!pattern.test(contents), `Legacy name found in ${file}: ${pattern}`);
