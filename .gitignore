@@ -5,6 +5,8 @@ node_modules/
 !.env.example
 .vercel/
 /content/
+/public/
+/resources/.content-engine-manifest.json
 .codex/
 .vercel
 .env*

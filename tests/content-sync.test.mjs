@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   generateContent,
+  fetchPublishedContent,
   normalizePublishedItems,
   sanitizeMarkdown,
   syncContent,
@@ -17,6 +18,7 @@ const published = {
   title: "Clearer Product Roadmaps",
   property: "herzenco",
   status: "published",
+  type: "article",
   excerpt: "A practical approach to roadmap decisions for teams balancing evidence, risk, and delivery.",
   body: "## Start with the decision\n\nUse **evidence** before adding more work.",
   publishedAt: "2026-07-20T12:00:00.000Z",
@@ -39,17 +41,15 @@ test("published content generates an index and article with metadata", async () 
   const root = await fixtureRoot();
   const items = normalizePublishedItems({ items: [published] });
   await generateContent({ rootDir: root, items });
-  const index = await fs.readFile(path.join(root, "content/index.html"), "utf8");
-  const article = await fs.readFile(path.join(root, "content/clearer-product-roadmaps/index.html"), "utf8");
+  const article = await fs.readFile(path.join(root, "resources/clearer-product-roadmaps/index.html"), "utf8");
   const resources = await fs.readFile(path.join(root, "resources/index.html"), "utf8");
-  assert.match(index, /Clearer Product Roadmaps/);
   assert.match(article, /<h1>Clearer Product Roadmaps<\/h1>/);
   assert.match(article, /Published <time/);
   assert.match(article, /Updated <time/);
-  assert.match(article, /rel="canonical" href="https:\/\/herzenco\.com\/content\/clearer-product-roadmaps\//);
+  assert.match(article, /rel="canonical" href="https:\/\/herzenco\.com\/resources\/clearer-product-roadmaps\//);
   assert.match(article, /application\/ld\+json/);
   assert.match(article, /A product roadmap workshop/);
-  assert.match(resources, /href="\/content\/clearer-product-roadmaps\//);
+  assert.match(resources, /href="\/resources\/clearer-product-roadmaps\//);
   assert.match(resources, /Clearer Product Roadmaps/);
 });
 
@@ -75,11 +75,54 @@ test("Markdown output is sanitized against script injection", () => {
 });
 
 test("sitemap includes published URLs and removes stale generated URLs", () => {
-  const input = '<?xml version="1.0"?><urlset><url><loc>https://herzenco.com/</loc></url><url><loc>https://herzenco.com/content/stale/</loc><lastmod>2020-01-01</lastmod></url></urlset>';
+  const input = '<?xml version="1.0"?><urlset><url><loc>https://herzenco.com/manual/</loc></url><!-- CONTENT_ENGINE_SITEMAP_START --><url><loc>https://herzenco.com/resources/stale/</loc></url><!-- CONTENT_ENGINE_SITEMAP_END --></urlset>';
   const output = updateSitemapXml(input, normalizePublishedItems([published]));
-  assert.match(output, /https:\/\/herzenco\.com\/content\//);
-  assert.match(output, /https:\/\/herzenco\.com\/content\/clearer-product-roadmaps\//);
-  assert.doesNotMatch(output, /content\/stale/);
+  assert.match(output, /https:\/\/herzenco\.com\/resources\/clearer-product-roadmaps\//);
+  assert.match(output, /https:\/\/herzenco\.com\/manual\//);
+  assert.doesNotMatch(output, /resources\/stale/);
+});
+
+test("stale generated pages are removed without touching manual resources", async () => {
+  const root = await fixtureRoot();
+  await fs.mkdir(path.join(root, "resources/stale-article"), { recursive: true });
+  await fs.mkdir(path.join(root, "resources/manual-guide"), { recursive: true });
+  await fs.writeFile(path.join(root, "resources/stale-article/index.html"), "stale");
+  await fs.writeFile(path.join(root, "resources/manual-guide/index.html"), "manual");
+  await fs.writeFile(
+    path.join(root, "resources/.content-engine-manifest.json"),
+    JSON.stringify(["stale-article"]),
+  );
+  await generateContent({ rootDir: root, items: normalizePublishedItems([published]) });
+  await assert.rejects(fs.access(path.join(root, "resources/stale-article/index.html")));
+  await fs.access(path.join(root, "resources/manual-guide/index.html"));
+});
+
+test("public feed articles without a status field are accepted", () => {
+  const { status: _status, ...publicArticle } = published;
+  assert.deepEqual(
+    normalizePublishedItems({ data: [publicArticle] }).map((item) => item.slug),
+    ["clearer-product-roadmaps"],
+  );
+});
+
+test("empty public feeds fail clearly", async () => {
+  await assert.rejects(
+    fetchPublishedContent({
+      contentEngineUrl: "https://content.example.com",
+      fetchImpl: async () => ({
+        ok: true,
+        json: async () => ({ data: [] }),
+      }),
+    }),
+    /no published Herzen Co\. articles/,
+  );
+});
+
+test("malformed public articles fail clearly", () => {
+  assert.throws(
+    () => normalizePublishedItems({ data: [{ ...published, body: "" }] }),
+    /missing required article content or metadata/,
+  );
 });
 
 test("failed Content Engine requests fail the sync without writing content", async () => {
@@ -92,7 +135,7 @@ test("failed Content Engine requests fail the sync without writing content", asy
     }),
     /Content Engine request failed \(503 Unavailable\)/,
   );
-  await assert.rejects(fs.access(path.join(root, "content/index.html")));
+  await assert.rejects(fs.access(path.join(root, "resources/clearer-product-roadmaps/index.html")));
 });
 
 function mockResponse() {
