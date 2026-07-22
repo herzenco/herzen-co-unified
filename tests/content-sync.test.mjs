@@ -46,7 +46,7 @@ test("published content generates an index and article with metadata", async () 
   assert.match(article, /<h1>Clearer Product Roadmaps<\/h1>/);
   assert.match(article, /Published <time/);
   assert.match(article, /Updated <time/);
-  assert.match(article, /rel="canonical" href="https:\/\/herzenco\.com\/resources\/clearer-product-roadmaps\//);
+  assert.match(article, /rel="canonical" href="https:\/\/herzenco\.co\/resources\/clearer-product-roadmaps\//);
   assert.match(article, /application\/ld\+json/);
   assert.match(article, /A product roadmap workshop/);
   assert.match(resources, /href="\/resources\/clearer-product-roadmaps\//);
@@ -75,10 +75,10 @@ test("Markdown output is sanitized against script injection", () => {
 });
 
 test("sitemap includes published URLs and removes stale generated URLs", () => {
-  const input = '<?xml version="1.0"?><urlset><url><loc>https://herzenco.com/manual/</loc></url><!-- CONTENT_ENGINE_SITEMAP_START --><url><loc>https://herzenco.com/resources/stale/</loc></url><!-- CONTENT_ENGINE_SITEMAP_END --></urlset>';
+  const input = '<?xml version="1.0"?><urlset><url><loc>https://herzenco.co/manual/</loc></url><!-- CONTENT_ENGINE_SITEMAP_START --><url><loc>https://herzenco.co/resources/stale/</loc></url><!-- CONTENT_ENGINE_SITEMAP_END --></urlset>';
   const output = updateSitemapXml(input, normalizePublishedItems([published]));
-  assert.match(output, /https:\/\/herzenco\.com\/resources\/clearer-product-roadmaps\//);
-  assert.match(output, /https:\/\/herzenco\.com\/manual\//);
+  assert.match(output, /https:\/\/herzenco\.co\/resources\/clearer-product-roadmaps\//);
+  assert.match(output, /https:\/\/herzenco\.co\/manual\//);
   assert.doesNotMatch(output, /resources\/stale/);
 });
 

@@ -16,7 +16,7 @@ Configure these for Production and Preview in the Vercel project settings:
 
 ```text
 CONTENT_ENGINE_URL=https://content.herzenco.co
-SITE_URL=https://herzenco.com
+SITE_URL=https://herzenco.co
 PUBLISH_SECRET=
 DEPLOY_HOOK_URL=
 ```
@@ -29,7 +29,7 @@ branch. It must never be sent to a browser or shared with the Content Engine.
 The Content Engine calls the public, authenticated site endpoint:
 
 ```http
-POST https://herzenco.com/api/publish
+POST https://herzenco.co/api/publish
 Authorization: Bearer <PUBLISH_SECRET>
 Content-Type: application/json
 

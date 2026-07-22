@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const output = path.join(root, "public");
 const entries = [
+  "404.html",
   "about",
   "assets",
   "contact",
