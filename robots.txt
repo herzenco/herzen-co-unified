@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://herzenco.com/sitemap.xml
+Sitemap: https://herzenco.co/sitemap.xml

@@ -17,6 +17,7 @@ const pages = [
 
 const requiredFiles = [
   ...pages,
+  "404.html",
   "robots.txt",
   "sitemap.xml",
   "llms.txt",
@@ -113,7 +114,7 @@ for (const page of pages) {
   const html = read(page);
   assert(/<title>[^<]{15,70}<\/title>/i.test(html), `${page} needs a focused title tag`);
   assert(/<meta name="description" content="[^"]{50,170}"/i.test(html), `${page} needs a meta description`);
-  assert(/<link rel="canonical" href="https:\/\/herzenco\.com\/[^"]*"/i.test(html), `${page} needs canonical URL`);
+  assert(/<link rel="canonical" href="https:\/\/herzenco\.co\/[^"]*"/i.test(html), `${page} needs canonical URL`);
   assert(html.includes('/assets/css/styles.css?v=20260721content1'), `${page} should load the current shared stylesheet`);
   assert(html.includes('/assets/brand/logo-1a-black.png'), `${page} should use the approved primary logo in the header`);
   assert(html.includes('/assets/brand/logo-1a-white.png'), `${page} should use the approved reversed logo in the footer`);
@@ -126,6 +127,12 @@ for (const page of pages) {
   assert(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i.test(html), `${page} needs JSON-LD`);
   const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
   assert(h1Count === 1, `${page} should have exactly one H1, found ${h1Count}`);
+  assert(/aria-controls="site-nav-links"/.test(html), `${page} menu button should identify the controlled navigation`);
+  assert(/id="site-nav-links"/.test(html), `${page} navigation should have a stable controlled id`);
+  for (const image of html.match(/<img\b[^>]*>/gi) || []) {
+    assert(/\bwidth="\d+"/.test(image), `${page} image needs an explicit width: ${image}`);
+    assert(/\bheight="\d+"/.test(image), `${page} image needs an explicit height: ${image}`);
+  }
 }
 
 const publicFiles = walk(root);
@@ -139,7 +146,13 @@ for (const file of publicFiles) {
   for (const term of retiredWebsiteOfferTerms) {
     assert(!contents.includes(term), `Retired website offer found in ${file}: ${term}`);
   }
+
+  assert(!contents.includes("https://herzenco.com"), `Incorrect canonical domain found in ${file}`);
 }
+
+const notFoundPage = read("404.html");
+assert(/<meta name="robots" content="noindex">/.test(notFoundPage), "404 page should not be indexed");
+assert(/Return home/.test(notFoundPage), "404 page should provide a clear recovery path");
 
 const homepage = read("index.html");
 const packageJson = JSON.parse(read("package.json"));
@@ -151,7 +164,7 @@ assert(/--clay-500:\s*#9c5c3e/i.test(siteStyles), "Design system should use the 
 assert(/Newsreader/.test(siteStyles) && /Jost/.test(siteStyles), "Design system should load the editorial font pairing");
 assert(/messy middle/i.test(homepage), "Homepage should use the editorial studio positioning phrase: messy middle");
 assert(!/Answering the questions buyers ask first/i.test(homepage), "Homepage should not use generic buyer-question section framing");
-assert(/<a class="button" href="\/contact\/">Book a call<\/a>/.test(homepage), "Homepage primary CTA should collect leads through contact");
+assert(/<a class="button" href="\/contact\/">Start a conversation<\/a>/.test(homepage), "Homepage primary CTA should set an accurate contact expectation");
 assert(!/See the primary offer/.test(homepage), "Homepage CTA should be concise and lead-focused");
 assert(/editorial-hero-media/.test(homepage), "Homepage hero image should use the editorial image wrapper");
 assert(/editorial-hero-media img[\s\S]*height: auto/.test(siteStyles), "Homepage hero image should not use fixed-height letterboxing");

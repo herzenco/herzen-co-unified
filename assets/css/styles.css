@@ -8,8 +8,8 @@
   --panel: #ffffff;
   --sage: #557466;
   --blue: #2f6078;
-  --coral: #c86f55;
-  --gold: #b68a44;
+  --coral: #9c5c3e;
+  --gold: #8f5137;
   --wash: #f3f5f0;
   --shadow: 0 22px 70px rgba(21, 25, 23, 0.12);
 }
@@ -1252,13 +1252,13 @@ textarea {
   --ink-800: #2a241d;
   --ink-700: #3d3629;
   --ink-500: #6e6455;
-  --stone-400: #8e8272;
+  --stone-400: #6f6558;
   --taupe-300: #b0a18e;
   --sand-200: #d6cab6;
   --bone-100: #ebe3d5;
   --paper-50: #f5efe4;
   --white-0: #fcfaf5;
-  --clay-400: #b27455;
+  --clay-400: #8f5137;
   --clay-500: #9c5c3e;
   --clay-600: #834a30;
   --font-sans: "Jost", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -1270,7 +1270,7 @@ textarea {
   --border-hairline: rgba(28, 24, 19, 0.12);
   --border-soft: rgba(28, 24, 19, 0.2);
   --border-on-dark: rgba(245, 239, 228, 0.18);
-  --focus-ring: rgba(156, 92, 62, 0.4);
+  --focus-ring: #834a30;
   --ease-standard: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ink: var(--ink-900);
   --muted: var(--ink-500);
