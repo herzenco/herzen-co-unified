@@ -10,6 +10,7 @@ const entries = [
   "contact",
   "custom-builds",
   "faq",
+  "glossary",
   "pricing",
   "process",
   "product-leadership",
@@ -34,3 +35,27 @@ for (const entry of entries) {
 }
 
 console.log(`Prepared ${entries.length} static entries in public/.`);
+
+const analyticsEnvironment = process.env.VERCEL_ENV === "production"
+  ? "production"
+  : "development";
+const analyticsToken = analyticsEnvironment === "production"
+  ? process.env.MIXPANEL_PRODUCTION_TOKEN
+  : process.env.MIXPANEL_DEVELOPMENT_TOKEN;
+
+if (!analyticsToken) {
+  throw new Error(
+    `Missing Mixpanel token for ${analyticsEnvironment}. Set MIXPANEL_${analyticsEnvironment.toUpperCase()}_TOKEN.`
+  );
+}
+
+const analyticsConfig = `window.HERZEN_ANALYTICS_CONFIG = Object.freeze(${JSON.stringify({
+  token: analyticsToken,
+  environment: analyticsEnvironment,
+})});\n`;
+await fs.writeFile(
+  path.join(output, "assets", "js", "mixpanel-config.js"),
+  analyticsConfig,
+  "utf8"
+);
+console.log(`Prepared Mixpanel ${analyticsEnvironment} configuration.`);
