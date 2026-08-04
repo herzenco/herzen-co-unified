@@ -1,25 +1,6 @@
-const ANALYTICS_CONSENT_KEY = "herzen_analytics_consent";
 const MIXPANEL_SDK_URL = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
-const GOOGLE_TAG_MANAGER_ID = "GTM-K9SZRQ94";
 const SCROLL_THRESHOLDS = [25, 50, 75, 100];
 const ACTIVE_TIME_THRESHOLDS = [15, 30, 60, 120];
-
-const safeStorage = {
-  get(key) {
-    try {
-      return window.localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  set(key, value) {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {
-      // Consent remains valid for the current page when storage is unavailable.
-    }
-  },
-};
 
 const safeSessionStorage = {
   get(key) {
@@ -73,20 +54,6 @@ const loadVercelAnalytics = () => {
     console.log(
       "[Vercel Web Analytics] Failed to load script. Enable Web Analytics for the project and redeploy."
     );
-  });
-};
-
-const loadGoogleTagManager = () => {
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
-    "gtm.start": Date.now(),
-    event: "gtm.js",
-  });
-
-  return loadScript(
-    `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(GOOGLE_TAG_MANAGER_ID)}`
-  ).catch(() => {
-    console.warn("[Google Tag Manager] Failed to load container.");
   });
 };
 
@@ -146,7 +113,7 @@ const reachedScrollThresholds = new Set();
 const reachedActiveTimeThresholds = new Set();
 
 const trackMixpanel = (eventName, properties = {}, options) => {
-  if (!mixpanelReady || !window.mixpanel?.has_opted_in_tracking?.()) return;
+  if (!mixpanelReady) return;
   window.mixpanel.track(eventName, properties, options);
 };
 
@@ -249,11 +216,9 @@ const initializeMixpanel = async () => {
   window.mixpanel.init(config.token, {
     debug: config.environment !== "production",
     persistence: "localStorage",
-    opt_out_tracking_by_default: true,
     track_pageview: false,
     ip: false,
   });
-  window.mixpanel.opt_in_tracking();
   window.mixpanel.register({
     platform: "web",
     environment: config.environment,
@@ -262,72 +227,10 @@ const initializeMixpanel = async () => {
   startPageTracking();
 };
 
-const enableAnalytics = async () => {
-  safeStorage.set(ANALYTICS_CONSENT_KEY, "accepted");
-  if (mixpanelReady) {
-    window.mixpanel.opt_in_tracking();
-    startPageTracking();
-  } else {
-    await initializeMixpanel();
-  }
-  await Promise.all([loadVercelAnalytics(), loadGoogleTagManager()]);
-};
-
-const disableAnalytics = () => {
-  safeStorage.set(ANALYTICS_CONSENT_KEY, "declined");
-  if (window.mixpanel?.opt_out_tracking) window.mixpanel.opt_out_tracking();
-};
-
-const createConsentControls = () => {
-  const preferencesButton = document.createElement("button");
-  preferencesButton.type = "button";
-  preferencesButton.className = "analytics-preferences";
-  preferencesButton.textContent = "Analytics preferences";
-
-  const banner = document.createElement("section");
-  banner.className = "analytics-consent";
-  banner.setAttribute("role", "dialog");
-  banner.setAttribute("aria-modal", "false");
-  banner.setAttribute("aria-labelledby", "analytics-consent-title");
-  banner.hidden = true;
-  banner.innerHTML = `
-    <div>
-      <p class="eyebrow">Your privacy</p>
-      <h2 id="analytics-consent-title">Help us improve this website?</h2>
-      <p>With your permission, we use anonymous analytics to understand which pages and resources are useful. We do not send your name, email, or form message.</p>
-    </div>
-    <div class="analytics-consent-actions">
-      <button class="button" type="button" data-analytics-accept>Allow analytics</button>
-      <button class="button secondary" type="button" data-analytics-decline>Decline</button>
-    </div>
-  `;
-
-  const closeBanner = () => {
-    banner.hidden = true;
-    preferencesButton.focus();
-  };
-
-  banner.querySelector("[data-analytics-accept]").addEventListener("click", async () => {
-    await enableAnalytics();
-    closeBanner();
-  });
-  banner.querySelector("[data-analytics-decline]").addEventListener("click", () => {
-    disableAnalytics();
-    closeBanner();
-  });
-  preferencesButton.addEventListener("click", () => {
-    banner.hidden = false;
-    banner.querySelector("[data-analytics-accept]").focus();
-  });
-
-  document.body.append(preferencesButton, banner);
-
-  const consent = safeStorage.get(ANALYTICS_CONSENT_KEY);
-  if (consent === "accepted") enableAnalytics();
-  else if (consent !== "declined") banner.hidden = false;
-};
-
-createConsentControls();
+initializeMixpanel().catch(() => {
+  console.warn("[Mixpanel] Failed to load analytics.");
+});
+loadVercelAnalytics();
 
 const navToggle = document.querySelector("[data-nav-toggle]");
 const navLinks = document.querySelector("[data-nav-links]");

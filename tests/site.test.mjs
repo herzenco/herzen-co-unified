@@ -107,7 +107,7 @@ for (const page of pages) {
   assert(/<title>[^<]{15,70}<\/title>/i.test(html), `${page} needs a focused title tag`);
   assert(/<meta name="description" content="[^"]{50,170}"/i.test(html), `${page} needs a meta description`);
   assert(/<link rel="canonical" href="https:\/\/herzenco\.co\/[^"]*"/i.test(html), `${page} needs canonical URL`);
-  assert(html.includes('/assets/css/styles.css?v=20260724mixpanel1'), `${page} should load the current shared stylesheet`);
+  assert(html.includes('/assets/css/styles.css?v=20260804gtm2'), `${page} should load the current shared stylesheet`);
   assert(html.includes('/assets/brand/logo-1a-black.png'), `${page} should use the approved primary logo in the header`);
   assert(html.includes('/assets/brand/logo-1a-white.png'), `${page} should use the approved reversed logo in the footer`);
   assert(!html.includes('/assets/brand/logo-black.png'), `${page} should not render the vertical black lockup`);
@@ -164,11 +164,12 @@ assert(packageJson.dependencies["@vercel/analytics"], "Site should include the V
 assert(/\/_vercel\/insights\/script\.js/.test(siteScript), "Shared script should load Vercel Web Analytics");
 assert(/@vercel\/analytics/.test(siteScript), "Shared script should identify the Vercel Analytics SDK");
 assert(/Lead CTA Clicked/.test(siteScript), "Shared script should track lead CTA clicks");
-assert(/opt_out_tracking_by_default:\s*true/.test(siteScript), "Mixpanel should start opted out");
-assert(/has_opted_in_tracking/.test(siteScript), "Mixpanel events should be consent gated");
-assert(/GTM-K9SZRQ94/.test(siteScript), "Shared script should configure the approved Google Tag Manager container");
-assert(/loadGoogleTagManager/.test(siteScript), "Google Tag Manager should load through the shared consent flow");
-assert(!pages.some((page) => /googletagmanager\.com/.test(read(page))), "Pages should not load Google Tag Manager before analytics consent");
+for (const page of [...pages, "404.html"]) {
+  const html = read(page);
+  assert(/googletagmanager\.com\/gtm\.js[\s\S]*GTM-K9SZRQ94/.test(html), `${page} should install GTM in the document head`);
+  assert(/googletagmanager\.com\/ns\.html\?id=GTM-K9SZRQ94/.test(html), `${page} should install the GTM noscript fallback`);
+}
+assert(!/analytics-consent|analytics-preferences|ANALYTICS_CONSENT_KEY/.test(siteScript + siteStyles), "Analytics consent controls should be removed");
 assert(/page_viewed/.test(siteScript), "Mixpanel should track page views");
 assert(/scroll_depth_reached/.test(siteScript), "Mixpanel should track scroll depth");
 assert(/page_engagement_completed/.test(siteScript), "Mixpanel should track active page engagement");
