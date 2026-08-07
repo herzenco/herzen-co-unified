@@ -13,6 +13,7 @@ const pages = [
   "faq/index.html",
   "about/index.html",
   "contact/index.html",
+  "meeting-booked/index.html",
 ];
 
 const requiredFiles = [
@@ -115,7 +116,8 @@ for (const page of pages) {
   assert(/<title>[^<]{15,70}<\/title>/i.test(html), `${page} needs a focused title tag`);
   assert(/<meta name="description" content="[^"]{50,170}"/i.test(html), `${page} needs a meta description`);
   assert(/<link rel="canonical" href="https:\/\/herzenco\.co\/[^"]*"/i.test(html), `${page} needs canonical URL`);
-  assert(html.includes('/assets/css/styles.css?v=20260721content1'), `${page} should load the current shared stylesheet`);
+  const stylesheetVersion = page === "meeting-booked/index.html" ? "20260804gtm2" : "20260721content1";
+  assert(html.includes(`/assets/css/styles.css?v=${stylesheetVersion}`), `${page} should load the current shared stylesheet`);
   assert(html.includes('/assets/brand/logo-1a-black.png'), `${page} should use the approved primary logo in the header`);
   assert(html.includes('/assets/brand/logo-1a-white.png'), `${page} should use the approved reversed logo in the footer`);
   assert(!html.includes('/assets/brand/logo-black.png'), `${page} should not render the vertical black lockup`);
@@ -153,6 +155,19 @@ for (const file of publicFiles) {
 const notFoundPage = read("404.html");
 assert(/<meta name="robots" content="noindex">/.test(notFoundPage), "404 page should not be indexed");
 assert(/Return home/.test(notFoundPage), "404 page should provide a clear recovery path");
+
+const meetingBookedPage = read("meeting-booked/index.html");
+assert(/<h1>You're booked\.<\/h1>/.test(meetingBookedPage), "Meeting confirmation needs the approved headline");
+assert(/Check your inbox for the calendar invitation and meeting details\./.test(meetingBookedPage), "Meeting confirmation needs the approved supporting copy");
+assert(/GTM-K9SZRQ94/.test(meetingBookedPage), "Meeting confirmation should load the existing GTM container");
+assert(/googletagmanager\.com\/gtm\.js/.test(meetingBookedPage), "Meeting confirmation should load the standard GTM script");
+assert(/googletagmanager\.com\/ns\.html/.test(meetingBookedPage), "Meeting confirmation should include the standard GTM noscript fallback");
+assert(/<meta name="robots" content="noindex,nofollow">/.test(meetingBookedPage), "Meeting confirmation should not be indexed or followed");
+assert(!/<form\b/i.test(meetingBookedPage), "Meeting confirmation should not contain a form");
+assert(!/calendly/i.test(meetingBookedPage), "Meeting confirmation should not embed Calendly or redirect configuration");
+assert(!/window\.location|location\.replace|location\.assign|http-equiv="refresh"/i.test(meetingBookedPage), "Meeting confirmation should not redirect");
+assert(!/Lead Form Submitted|Lead CTA Clicked|booked meeting|conversion/i.test(meetingBookedPage), "Meeting confirmation should not fire a custom conversion event or tag");
+assert(!read("sitemap.xml").includes("meeting-booked"), "Meeting confirmation should stay out of the public sitemap");
 
 const homepage = read("index.html");
 const packageJson = JSON.parse(read("package.json"));

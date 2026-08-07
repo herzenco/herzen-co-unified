@@ -16,6 +16,7 @@ const entries = [
   "resources",
   "index.html",
   "llms.txt",
+  "meeting-booked",
   "robots.txt",
   "site.webmanifest",
   "sitemap.xml",
