@@ -11,6 +11,7 @@ const entries = [
   "custom-builds",
   "faq",
   "glossary",
+  "meeting-booked",
   "pricing",
   "process",
   "product-leadership",

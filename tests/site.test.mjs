@@ -12,6 +12,7 @@ const pages = [
   "resources/index.html",
   "faq/index.html",
   "glossary/index.html",
+  "meeting-booked/index.html",
   "about/index.html",
   "contact/index.html",
 ];
@@ -168,6 +169,8 @@ for (const page of [...pages, "404.html"]) {
   const html = read(page);
   assert(/googletagmanager\.com\/gtm\.js[\s\S]*GTM-K9SZRQ94/.test(html), `${page} should install GTM in the document head`);
   assert(/googletagmanager\.com\/ns\.html\?id=GTM-K9SZRQ94/.test(html), `${page} should install the GTM noscript fallback`);
+  assert(/googletagmanager\.com\/gtag\/js\?id=AW-11011556680/.test(html), `${page} should load the Google Ads tag`);
+  assert(/gtag\('config', 'AW-11011556680'\)/.test(html), `${page} should configure the Google Ads account`);
 }
 assert(!/analytics-consent|analytics-preferences|ANALYTICS_CONSENT_KEY/.test(siteScript + siteStyles), "Analytics consent controls should be removed");
 assert(/page_viewed/.test(siteScript), "Mixpanel should track page views");

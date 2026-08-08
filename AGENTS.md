@@ -1,6 +1,6 @@
 # Analytics Tracking — Mixpanel
 
-This static marketing website uses Mixpanel for behavioral and conversion analytics. Vercel Web Analytics remains installed for aggregate traffic reporting. Google Tag Manager container `GTM-K9SZRQ94` is installed directly on every page; do not add another analytics tool without explicit user approval.
+This static marketing website uses Mixpanel for behavioral and conversion analytics. Vercel Web Analytics remains installed for aggregate traffic reporting. Google Tag Manager container `GTM-K9SZRQ94` and Google Ads tag `AW-11011556680` are installed directly on every page; do not add another analytics tool without explicit user approval.
 
 ## Before adding or changing tracking
 
@@ -17,6 +17,7 @@ This static marketing website uses Mixpanel for behavioral and conversion analyt
 | Platform | Static HTML/CSS/JavaScript on Vercel |
 | Mixpanel SDK | Browser SDK loaded from Mixpanel’s official CDN |
 | Google Tag Manager | Container `GTM-K9SZRQ94`, installed directly in every page's `<head>` and after its opening `<body>` |
+| Google Ads tag | Account `AW-11011556680`, installed directly in every page's `<head>` |
 | Tracking method | Client-side |
 | CDP | None |
 | Consent required | No; analytics load immediately |
