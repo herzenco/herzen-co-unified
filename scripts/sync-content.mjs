@@ -111,12 +111,12 @@ export function normalizePublishedItems(payload) {
       const excerpt = String(item.excerpt || "").trim();
       const title = String(item.title || "").trim();
       const body = String(item.body ?? item.markdown ?? item.content ?? "").trim();
-      const seoTitle = String(item.seoTitle ?? item.metaTitle ?? item.seo?.title ?? "").trim();
-      const seoDescription = String(item.seoDescription ?? item.metaDescription ?? item.seo?.description ?? "").trim();
+      const seoTitle = String(item.seoTitle ?? item.metaTitle ?? item.seo?.title ?? title).trim();
+      const seoDescription = String(item.seoDescription ?? item.metaDescription ?? item.seo?.description ?? excerpt).trim();
       if (item.type && item.type !== "article") {
         throw new Error(`Published item "${slug}" has unsupported type "${item.type}"`);
       }
-      if (!title || !excerpt || !body || !seoTitle || !seoDescription || !item.publishedAt) {
+      if (!title || !excerpt || !body || !(item.publishedAt ?? item.published_at)) {
         throw new Error(`Published item "${slug}" is missing required article content or metadata`);
       }
       return {
@@ -130,8 +130,8 @@ export function normalizePublishedItems(payload) {
         seoDescription,
         ogTitle: String(item.socialMeta?.ogTitle ?? item.ogTitle ?? seoTitle).trim(),
         ogDescription: String(item.socialMeta?.ogDescription ?? item.ogDescription ?? seoDescription).trim(),
-        heroImageUrl: safeMediaUrl(item.heroImageUrl ?? item.heroImage?.url ?? item.ogImage ?? item.socialMeta?.ogImage),
-        heroImageAlt: String(item.heroImageAlt ?? item.heroImage?.alt ?? "").trim(),
+        heroImageUrl: safeMediaUrl(item.heroImageUrl ?? item.heroImage?.url ?? item.hero_image?.url ?? item.ogImage ?? item.socialMeta?.ogImage),
+        heroImageAlt: String(item.heroImageAlt ?? item.heroImage?.alt ?? item.hero_image?.alt ?? "").trim(),
       };
     })
     .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
@@ -246,17 +246,15 @@ export function updateSitemapXml(xml, items) {
   return xml.replace(pattern, generated);
 }
 
-export async function fetchPublishedContent({ contentEngineUrl, fetchImpl = fetch }) {
-  if (!contentEngineUrl) throw new Error("CONTENT_ENGINE_URL is required");
-  const endpoint = new URL("/api/content", contentEngineUrl);
+export async function fetchPublishedContent({ contentApiUrl, contentApiToken, fetchImpl = fetch }) {
+  if (!contentApiUrl) throw new Error("OCC_CONTENT_API_URL is required");
+  if (!contentApiToken) throw new Error("OCC_CONTENT_API_TOKEN is required");
+  const endpoint = new URL(contentApiUrl);
   endpoint.searchParams.set("property", PROPERTY_SLUG);
-  const response = await fetchImpl(endpoint, { headers: { accept: "application/json" } });
-  if (!response.ok) throw new Error(`Content Engine request failed (${response.status} ${response.statusText})`);
-  const items = normalizePublishedItems(await response.json());
-  if (!items.length) {
-    throw new Error("Content Engine returned no published Herzen Co. articles");
-  }
-  return items;
+  endpoint.searchParams.set("status", "published");
+  const response = await fetchImpl(endpoint, { headers: { accept: "application/json", authorization: `Bearer ${contentApiToken}` } });
+  if (!response.ok) throw new Error(`OCC content request failed (${response.status} ${response.statusText})`);
+  return normalizePublishedItems(await response.json());
 }
 
 export async function generateContent({ rootDir = process.cwd(), items }) {
@@ -298,7 +296,8 @@ async function readManifest(filePath) {
 
 export async function syncContent(options = {}) {
   const items = await fetchPublishedContent({
-    contentEngineUrl: options.contentEngineUrl ?? process.env.CONTENT_ENGINE_URL,
+    contentApiUrl: options.contentApiUrl ?? process.env.OCC_CONTENT_API_URL,
+    contentApiToken: options.contentApiToken ?? process.env.OCC_CONTENT_API_TOKEN,
     fetchImpl: options.fetchImpl,
   });
   await generateContent({ rootDir: options.rootDir, items });
