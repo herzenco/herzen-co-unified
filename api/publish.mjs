@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 const PROPERTY_SLUG = "herzenco";
+const EVENTS = new Set(["content.published", "content.updated", "content.unpublished", "content.archived"]);
 
 function secretMatches(provided, expected) {
   const left = Buffer.from(provided || "");
@@ -18,8 +19,8 @@ export default async function handler(req, res) {
     return reply(res, 405, { error: "method_not_allowed" });
   }
 
-  const publishSecret = process.env.PUBLISH_SECRET;
-  const deployHookUrl = process.env.DEPLOY_HOOK_URL;
+  const publishSecret = process.env.HERZENCO_PUBLISH_WEBHOOK_SECRET;
+  const deployHookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
   if (!publishSecret || !deployHookUrl) return reply(res, 500, { error: "server_not_configured" });
 
   const authorization = req.headers.authorization || "";
@@ -30,7 +31,11 @@ export default async function handler(req, res) {
   if (typeof payload === "string") {
     try { payload = JSON.parse(payload); } catch { return reply(res, 400, { error: "invalid_json" }); }
   }
-  if (payload?.propertySlug !== PROPERTY_SLUG) return reply(res, 400, { error: "invalid_property_slug" });
+  if (payload?.property !== PROPERTY_SLUG) return reply(res, 400, { error: "invalid_property" });
+  if (typeof payload?.event_id !== "string" || !payload.event_id.trim()) return reply(res, 400, { error: "invalid_event_id" });
+  if (!EVENTS.has(payload?.event)) return reply(res, 400, { error: "invalid_event" });
+  if (typeof payload?.content_id !== "string" || !payload.content_id.trim()) return reply(res, 400, { error: "invalid_content_id" });
+  if (!Number.isFinite(Date.parse(payload?.occurred_at))) return reply(res, 400, { error: "invalid_occurred_at" });
   if (typeof payload?.slug !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(payload.slug)) {
     return reply(res, 400, { error: "invalid_slug" });
   }
@@ -39,10 +44,10 @@ export default async function handler(req, res) {
     const hookResponse = await fetch(deployHookUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ propertySlug: PROPERTY_SLUG, slug: payload.slug, source: "herzen-content-engine" }),
+      body: JSON.stringify({ event_id: payload.event_id, event: payload.event, property: PROPERTY_SLUG, content_id: payload.content_id, slug: payload.slug, occurred_at: payload.occurred_at, source: "occ" }),
     });
     if (!hookResponse.ok) return reply(res, 502, { error: "deployment_hook_failed" });
-    return reply(res, 202, { accepted: true, propertySlug: PROPERTY_SLUG, slug: payload.slug });
+    return reply(res, 202, { accepted: true, event_id: payload.event_id });
   } catch {
     return reply(res, 502, { error: "deployment_hook_failed" });
   }

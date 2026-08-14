@@ -10,10 +10,11 @@ and sitemap, runs the site checks, and assembles the `public/` deployment direct
 
 Required Vercel build variables:
 
-- `CONTENT_ENGINE_URL=https://content.herzenco.co`
+- `OCC_CONTENT_API_URL=https://operations.herzenco.co/api/v1/content`
+- `OCC_CONTENT_API_TOKEN` (server-only)
 - `SITE_URL=https://herzenco.co`
-- `PUBLISH_SECRET`
-- `DEPLOY_HOOK_URL`
+- `HERZENCO_PUBLISH_WEBHOOK_SECRET` (server-only)
+- `VERCEL_DEPLOY_HOOK_URL` (server-only)
 
 Run locally:
 

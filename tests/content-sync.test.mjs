@@ -29,6 +29,15 @@ const published = {
   heroImageAlt: "A product roadmap workshop",
 };
 
+const publishEvent = {
+  event_id: "846bb74f-fd6c-4543-a1ef-bdf39bf01db9",
+  event: "content.published",
+  property: "herzenco",
+  content_id: "0ad53a76-e724-4526-a480-f3f8c83c58dd",
+  slug: "article-slug",
+  occurred_at: "2026-08-14T18:00:00.000Z",
+};
+
 async function fixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "herzen-content-"));
   await fs.mkdir(path.join(root, "resources"), { recursive: true });
@@ -105,17 +114,13 @@ test("public feed articles without a status field are accepted", () => {
   );
 });
 
-test("empty public feeds fail clearly", async () => {
-  await assert.rejects(
-    fetchPublishedContent({
-      contentEngineUrl: "https://content.example.com",
-      fetchImpl: async () => ({
-        ok: true,
-        json: async () => ({ data: [] }),
-      }),
-    }),
-    /no published Herzen Co\. articles/,
-  );
+test("empty public feeds are authoritative and remove stale generated content", async () => {
+  const items = await fetchPublishedContent({
+    contentApiUrl: "https://operations.example.com/api/v1/content",
+    contentApiToken: "server-token",
+    fetchImpl: async () => ({ ok: true, json: async () => ({ data: [] }) }),
+  });
+  assert.deepEqual(items, []);
 });
 
 test("malformed public articles fail clearly", () => {
@@ -130,10 +135,11 @@ test("failed Content Engine requests fail the sync without writing content", asy
   await assert.rejects(
     syncContent({
       rootDir: root,
-      contentEngineUrl: "https://engine.example.com",
+      contentApiUrl: "https://operations.example.com/api/v1/content",
+      contentApiToken: "server-token",
       fetchImpl: async () => ({ ok: false, status: 503, statusText: "Unavailable" }),
     }),
-    /Content Engine request failed \(503 Unavailable\)/,
+    /OCC content request failed \(503 Unavailable\)/,
   );
   await assert.rejects(fs.access(path.join(root, "resources/clearer-product-roadmaps/index.html")));
 });
@@ -150,26 +156,26 @@ function mockResponse() {
 }
 
 test("publishing endpoint rejects invalid secrets", async () => {
-  process.env.PUBLISH_SECRET = "correct-secret";
-  process.env.DEPLOY_HOOK_URL = "https://api.vercel.com/v1/integrations/deploy/test";
+  process.env.HERZENCO_PUBLISH_WEBHOOK_SECRET = "correct-secret";
+  process.env.VERCEL_DEPLOY_HOOK_URL = "https://api.vercel.com/v1/integrations/deploy/test";
   const res = mockResponse();
-  await publishHandler({ method: "POST", headers: { authorization: "Bearer wrong-secret" }, body: { propertySlug: "herzenco", slug: "article-slug" } }, res);
+  await publishHandler({ method: "POST", headers: { authorization: "Bearer wrong-secret" }, body: publishEvent }, res);
   assert.equal(res.statusCode, 401);
   assert.deepEqual(res.body, { error: "invalid_secret" });
 });
 
 test("publishing endpoint rejects invalid property slugs", async () => {
-  process.env.PUBLISH_SECRET = "correct-secret";
-  process.env.DEPLOY_HOOK_URL = "https://api.vercel.com/v1/integrations/deploy/test";
+  process.env.HERZENCO_PUBLISH_WEBHOOK_SECRET = "correct-secret";
+  process.env.VERCEL_DEPLOY_HOOK_URL = "https://api.vercel.com/v1/integrations/deploy/test";
   const res = mockResponse();
-  await publishHandler({ method: "POST", headers: { authorization: "Bearer correct-secret" }, body: { propertySlug: "another-site", slug: "article-slug" } }, res);
+  await publishHandler({ method: "POST", headers: { authorization: "Bearer correct-secret" }, body: { ...publishEvent, property: "another-site" } }, res);
   assert.equal(res.statusCode, 400);
-  assert.deepEqual(res.body, { error: "invalid_property_slug" });
+  assert.deepEqual(res.body, { error: "invalid_property" });
 });
 
 test("publishing endpoint triggers the private deployment hook", async () => {
-  process.env.PUBLISH_SECRET = "correct-secret";
-  process.env.DEPLOY_HOOK_URL = "https://api.vercel.com/v1/integrations/deploy/test";
+  process.env.HERZENCO_PUBLISH_WEBHOOK_SECRET = "correct-secret";
+  process.env.VERCEL_DEPLOY_HOOK_URL = "https://api.vercel.com/v1/integrations/deploy/test";
   const originalFetch = globalThis.fetch;
   let request;
   globalThis.fetch = async (url, options) => {
@@ -178,11 +184,36 @@ test("publishing endpoint triggers the private deployment hook", async () => {
   };
   try {
     const res = mockResponse();
-    await publishHandler({ method: "POST", headers: { authorization: "Bearer correct-secret" }, body: { propertySlug: "herzenco", slug: "article-slug" } }, res);
+    await publishHandler({ method: "POST", headers: { authorization: "Bearer correct-secret" }, body: publishEvent }, res);
     assert.equal(res.statusCode, 202);
-    assert.equal(request.url, process.env.DEPLOY_HOOK_URL);
+    assert.equal(request.url, process.env.VERCEL_DEPLOY_HOOK_URL);
     assert.equal(request.options.method, "POST");
+    assert.equal(res.body.event_id, publishEvent.event_id);
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("OCC content pull uses the exact endpoint, scope, and server bearer token", async () => {
+  let request;
+  await fetchPublishedContent({
+    contentApiUrl: "https://operations.herzenco.co/api/v1/content",
+    contentApiToken: "server-token",
+    fetchImpl: async (url, options) => {
+      request = { url: String(url), options };
+      return { ok: true, json: async () => ({ data: [] }) };
+    },
+  });
+  assert.equal(request.url, "https://operations.herzenco.co/api/v1/content?property=herzenco&status=published");
+  assert.equal(request.options.headers.authorization, "Bearer server-token");
+});
+
+test("OCC snake-case article contract normalizes correctly", () => {
+  const article = normalizePublishedItems({ data: [{
+    id: "article-id", property: "herzenco", status: "published", slug: "occ-article", title: "OCC article",
+    excerpt: "OCC summary", body: "<h2>Safe HTML</h2>", published_at: "2026-08-14T18:00:00Z", updated_at: "2026-08-14T19:00:00Z",
+    seo: { title: "OCC article | Herzen Co.", description: "OCC summary" }, hero_image: { url: "https://images.example/hero.jpg", alt: "Hero" },
+  }] })[0];
+  assert.equal(article.publishedAt, "2026-08-14T18:00:00.000Z");
+  assert.equal(article.heroImageAlt, "Hero");
 });
