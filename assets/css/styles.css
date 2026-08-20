@@ -203,6 +203,43 @@
   line-height: 1.65;
 }
 
+/* OCC-generated resource articles */
+.content-article-header {
+  padding: clamp(5.5rem, 12vw, 10.5rem) 0 clamp(3.5rem, 8vw, 6.5rem);
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--paper-50);
+}
+
+.content-article-header h1 {
+  max-width: 13ch;
+  margin: 1rem 0 1.5rem;
+  font-size: clamp(3.5rem, 7.5vw, 7rem);
+  line-height: .93;
+  letter-spacing: -.055em;
+}
+
+.content-excerpt { max-width: 45rem; color: var(--muted); font-size: clamp(1.125rem, 2vw, 1.4rem); line-height: 1.55; }
+.container-narrow { width: min(calc(100% - (2 * var(--gutter))), 48rem); margin-inline: auto; }
+.content-dates { display: flex; gap: 1.5rem; margin-top: 2rem; color: var(--muted); font-size: .78rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+.content-article > .container { padding-block: clamp(3rem, 8vw, 6rem); }
+.content-hero-image { margin: 0 0 clamp(3rem, 8vw, 5rem); }
+.content-hero-image img { display: block; width: 100%; max-height: 34rem; object-fit: cover; }
+.prose { color: var(--ink); font-family: var(--font-serif); font-size: clamp(1.2rem, 2vw, 1.38rem); line-height: 1.72; }
+.prose > * + * { margin-top: 1.35em; }
+.prose h2, .prose h3, .prose h4 { margin-top: 2em; line-height: 1.08; }
+.prose h2 { font-size: clamp(2.25rem, 4vw, 3.5rem); }
+.prose h3 { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+.prose a { color: var(--clay-500); text-underline-offset: .18em; }
+.prose blockquote { margin-inline: 0; padding: .5rem 0 .5rem 1.75rem; border-left: 3px solid var(--clay-500); color: var(--muted); font-style: italic; }
+.prose pre { overflow-x: auto; padding: 1.25rem; background: var(--ink); color: var(--paper); font-size: .9rem; }
+.prose img { max-width: 100%; height: auto; }
+.content-article-footer { margin-top: clamp(4rem, 9vw, 7rem); padding-top: 1.5rem; border-top: 1px solid var(--border-hairline); }
+
+@media (max-width: 560px) {
+  .content-article-header h1 { font-size: clamp(3rem, 14vw, 4.4rem); }
+  .content-dates { align-items: flex-start; flex-direction: column; gap: .5rem; }
+}
+
 .resources-note {
   padding: clamp(4rem, 8vw, 7rem) 0;
   background: var(--ink);

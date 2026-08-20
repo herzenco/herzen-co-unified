@@ -205,7 +205,8 @@ const resourcesPage = read("resources/index.html");
 assert(/class="[^"]*resources-masthead/.test(resourcesPage), "Resources should retain the publishing masthead");
 assert(!/What is fractional product leadership\?/.test(resourcesPage), "Resources should not contain hardcoded editorial articles");
 assert(!/class="resource-row"/.test(resourcesPage), "Resources should not use the old utility-list layout");
-assert(/No resources published yet\./.test(resourcesPage), "Resources should show only the empty publishing state");
+assert(/OCC_RESOURCES_START[\s\S]*OCC_RESOURCES_END/.test(resourcesPage), "Resources should retain its OCC-managed publishing region");
+assert(/No resources published yet\.|class="article-grid"/.test(resourcesPage), "Resources should show either the empty state or OCC-generated article cards");
 
 const contactPage = read("contact/index.html");
 assert(/action="\/api\/inquiry"/.test(contactPage), "Contact form should submit through the website inquiry endpoint");

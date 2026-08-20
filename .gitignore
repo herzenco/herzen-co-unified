@@ -8,6 +8,7 @@ node_modules/
 /public/
 /resources/.content-engine-manifest.json
 .codex/
+.occ-content-manifest.json
 .vercel
 .env*
 !.env.example
