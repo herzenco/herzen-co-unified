@@ -17,7 +17,7 @@ An incomplete approved record must never be published. OCC moves it to `recovery
 
 ## Website webhook
 
-`POST https://herzenco.co/api/publish`
+`POST https://www.herzenco.co/api/publish`
 
 Headers:
 
@@ -102,12 +102,14 @@ OCC:
 
 ```dotenv
 HERZENCO_CONTENT_API_TOKEN=
-HERZENCO_PUBLISH_WEBHOOK_URL=https://herzenco.co/api/publish
+HERZENCO_PUBLISH_WEBHOOK_URL=https://www.herzenco.co/api/publish
 HERZENCO_PUBLISH_WEBHOOK_SECRET=
 CRON_SECRET=
 ```
 
 `OCC_CONTENT_API_TOKEN` must exactly match `HERZENCO_CONTENT_API_TOKEN`. Both projects must use the same `HERZENCO_PUBLISH_WEBHOOK_SECRET`. All four credential or hook values are server-only and must never be exposed in browser JavaScript or committed to Git.
+
+Use the direct `www` webhook host. Do not depend on the apex-domain redirect for an authenticated POST because clients can remove the `Authorization` header when a redirect crosses hosts.
 
 ## Reliability and security requirements
 
