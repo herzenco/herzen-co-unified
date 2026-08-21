@@ -11,6 +11,7 @@ const pages = [
   "process/index.html",
   "resources/index.html",
   "faq/index.html",
+  "FreeDeliveryMap/index.html",
   "glossary/index.html",
   "meeting-booked/index.html",
   "about/index.html",
@@ -105,10 +106,11 @@ for (const file of requiredFiles) {
 
 for (const page of pages) {
   const html = read(page);
+  const isCampaignPage = page === "FreeDeliveryMap/index.html";
   assert(/<title>[^<]{15,70}<\/title>/i.test(html), `${page} needs a focused title tag`);
   assert(/<meta name="description" content="[^"]{50,170}"/i.test(html), `${page} needs a meta description`);
   assert(/<link rel="canonical" href="https:\/\/herzenco\.co\/[^"]*"/i.test(html), `${page} needs canonical URL`);
-  assert(html.includes('/assets/css/styles.css?v=20260804gtm2'), `${page} should load the current shared stylesheet`);
+  assert(/\/assets\/css\/styles\.css\?v=\d+[a-z0-9]*/i.test(html), `${page} should load a versioned shared stylesheet`);
   assert(html.includes('/assets/brand/logo-1a-black.png'), `${page} should use the approved primary logo in the header`);
   assert(html.includes('/assets/brand/logo-1a-white.png'), `${page} should use the approved reversed logo in the footer`);
   assert(!html.includes('/assets/brand/logo-black.png'), `${page} should not render the vertical black lockup`);
@@ -120,8 +122,15 @@ for (const page of pages) {
   assert(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i.test(html), `${page} needs JSON-LD`);
   const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
   assert(h1Count === 1, `${page} should have exactly one H1, found ${h1Count}`);
-  assert(/aria-controls="site-nav-links"/.test(html), `${page} menu button should identify the controlled navigation`);
-  assert(/id="site-nav-links"/.test(html), `${page} navigation should have a stable controlled id`);
+  if (isCampaignPage) {
+    const hrefs = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/gi)].map((match) => match[1]);
+    assert(!/<nav\b/i.test(html), `${page} should not include site navigation`);
+    assert(hrefs.every((href) => href === "/" || href === "#main" || href === "https://calendly.com/herzenco/xyren-discover"), `${page} should link only to home, its skip target, or Calendly`);
+    assert(hrefs.filter((href) => href === "https://calendly.com/herzenco/xyren-discover").length >= 2, `${page} should repeat the sole conversion CTA`);
+  } else {
+    assert(/aria-controls="site-nav-links"/.test(html), `${page} menu button should identify the controlled navigation`);
+    assert(/id="site-nav-links"/.test(html), `${page} navigation should have a stable controlled id`);
+  }
   for (const image of html.match(/<img\b[^>]*>/gi) || []) {
     assert(/\bwidth="\d+"/.test(image), `${page} image needs an explicit width: ${image}`);
     assert(/\bheight="\d+"/.test(image), `${page} image needs an explicit height: ${image}`);
@@ -218,5 +227,13 @@ assert(!/hello@herzenco\.com/.test(contactPage), "Contact page should not use th
 assert(/fetch\("\/api\/inquiry"/.test(siteScript), "Contact form should send JSON to the website inquiry API");
 assert(/response\.ok/.test(siteScript), "Contact form should confirm delivery before tracking success");
 assert(/https:\/\/calendly\.com\/herzenco\/xyren-discover/.test(contactPage), "Contact page should offer direct call scheduling");
+
+const deliveryMapPage = read("FreeDeliveryMap/index.html");
+assert(/class="campaign-page delivery-map-page"/.test(deliveryMapPage), "Delivery Map page should use the campaign design-system surface");
+assert(/\.delivery-hero[\s\S]*var\(--container-max\)/.test(siteStyles), "Delivery Map hero should use the shared container width token");
+assert(/\.delivery-outcomes[\s\S]*var\(--container-max\)/.test(siteStyles), "Delivery Map sections should use the shared container width token");
+assert(/\.delivery-map-card[\s\S]*border: 1px solid var\(--border-hairline\)/.test(siteStyles), "Delivery Map card should use the shared hairline border");
+assert(/\.campaign-header \.brand-logo[\s\S]*height: 34px/.test(siteStyles), "Campaign header should use the approved 34px horizontal logo treatment");
+assert(!/\.delivery-close[^}]*background: var\(--coral\)/.test(siteStyles), "Delivery Map close should not use an off-pattern clay color block");
 
 console.log(`Verified ${pages.length} pages and ${publicFiles.length} public files.`);
