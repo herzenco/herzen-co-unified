@@ -7,43 +7,29 @@ import publishHandler, { resetPublishStateForTests } from "../api/publish.mjs";
 import { fetchPublishedContent, generateContent, normalizePublishedItems, sanitizeMarkdown } from "../scripts/sync-content.mjs";
 
 const publication = {
-  schema_version: 1,
-  content_item_id: "22222222-2222-4222-8222-222222222222",
-  idempotency_key: "occ:22222222-2222-4222-8222-222222222222:approved-hash",
-  approved_content_hash: "a".repeat(64),
-  title: "Clearer Product Roadmaps",
-  body: "## Start with the decision\n\nUse **evidence** before adding more work.",
-  content_type: "article",
-  destination: "resource_library",
+  event_id: "11111111-1111-4111-8111-111111111111",
+  event: "content.published",
+  property: "herzenco",
+  content_id: "22222222-2222-4222-8222-222222222222",
   slug: "clearer-product-roadmaps",
-  canonical_path: "/resources/clearer-product-roadmaps/",
-  seo: { title: "Clearer Product Roadmaps | Herzen Co.", description: "A practical guide to clearer roadmap decisions.", keywords: ["roadmaps"] },
-  featured_image: { url: "https://images.example.test/roadmap.jpg", alt_text: "A roadmap workshop" },
-  media: [],
-  author: "Herzen Co.",
-  publish_date: "2026-08-14T18:00:00.000Z",
-  tags: ["Operations"],
-  categories: ["Operations"],
-  status: "published",
-  source: { system: "occ", approved_at: "2026-08-14T17:00:00.000Z", approved_by: "Reviewer" },
+  occurred_at: "2026-08-14T18:00:00.000Z",
 };
 
 const article = {
-  id: publication.content_item_id,
-  property_id: "33333333-3333-4333-8333-333333333333",
+  id: publication.content_id,
+  property: "herzenco",
   status: "published",
   slug: publication.slug,
-  title: publication.title,
-  brief: "A practical approach to roadmap decisions for teams balancing evidence, risk, and delivery.",
-  body: publication.body,
+  title: "Clearer Product Roadmaps",
+  excerpt: "A practical approach to roadmap decisions for teams balancing evidence, risk, and delivery.",
+  body: "## Start with the decision\n\nUse **evidence** before adding more work.",
   published_at: "2026-08-14T18:00:00.000Z",
   updated_at: "2026-08-14T18:00:00.000Z",
-  seo_title: publication.seo.title,
-  meta_description: publication.seo.description,
-  creative_external_url: publication.featured_image.url,
-  final_url: "https://herzenco.co/resources/clearer-product-roadmaps/",
-  tags: publication.tags,
-  metadata: { author: publication.author, categories: publication.categories, image_alt: publication.featured_image.alt_text },
+  seo: { title: "Clearer Product Roadmaps | Herzen Co.", description: "A practical guide to clearer roadmap decisions." },
+  hero_image: { url: "https://images.example.test/roadmap.jpg", alt: "A roadmap workshop" },
+  canonical_url: "https://herzenco.co/resources/clearer-product-roadmaps/",
+  author: "Herzen Co.",
+  category: "Operations",
 };
 
 function response() {
@@ -51,7 +37,7 @@ function response() {
 }
 
 function request(body = publication, secret = "test-secret") {
-  return { method: "POST", headers: { authorization: `Bearer ${secret}`, "idempotency-key": body.idempotency_key }, body };
+  return { method: "POST", headers: { authorization: `Bearer ${secret}`, "idempotency-key": body.event_id }, body };
 }
 
 test.beforeEach(() => {
@@ -60,7 +46,7 @@ test.beforeEach(() => {
   process.env.VERCEL_DEPLOY_HOOK_URL = "https://api.vercel.com/v1/integrations/deploy/test";
 });
 
-test("OCC publication payload authenticates, validates, and triggers a deployment", async () => {
+test("OCC identifier event authenticates, validates, and triggers a deployment", async () => {
   const originalFetch = globalThis.fetch;
   let call;
   globalThis.fetch = async (url, options) => { call = { url, options }; return { ok: true, status: 200 }; };
@@ -69,8 +55,11 @@ test("OCC publication payload authenticates, validates, and triggers a deploymen
     await publishHandler(request(), res);
     assert.equal(res.statusCode, 202);
     assert.equal(call.url, process.env.VERCEL_DEPLOY_HOOK_URL);
-    assert.equal(JSON.parse(call.options.body).content_item_id, publication.content_item_id);
-    assert.equal(res.body.final_url, `https://herzenco.co${publication.canonical_path}`);
+    const deployEvent = JSON.parse(call.options.body);
+    assert.equal(deployEvent.event_id, publication.event_id);
+    assert.equal(deployEvent.content_id, publication.content_id);
+    assert.doesNotMatch(JSON.stringify(deployEvent), /title|body|approved_content_hash/);
+    assert.equal(res.body.final_url, `https://herzenco.co/resources/${publication.slug}/`);
   } finally { globalThis.fetch = originalFetch; }
 });
 
@@ -79,7 +68,7 @@ test("webhook rejects invalid secrets and malformed events", async () => {
   await publishHandler(request(publication, "wrong"), res);
   assert.equal(res.statusCode, 401);
   res = response();
-  await publishHandler(request({ ...publication, destination: "homepage" }), res);
+  await publishHandler(request({ ...publication, property: "other" }), res);
   assert.equal(res.statusCode, 400);
 });
 
@@ -115,14 +104,15 @@ test("failed deployment hooks remain retryable", async () => {
 test("OCC pull uses server authentication and the finalized filters", async () => {
   const calls = [];
   const items = await fetchPublishedContent({
-    apiUrl: "https://operations.example.test/api/v1/content-items",
+    apiUrl: "https://operations.example.test/api/v1/content",
     token: "content-token",
-    fetchImpl: async (url, options) => { calls.push({ url, options }); return { ok: true, json: async () => ({ data: { items: [article], count: 1, limit: 500, offset: 0 } }) }; },
+    fetchImpl: async (url, options) => { calls.push({ url, options }); return { ok: true, json: async () => ({ data: [article] }) }; },
   });
   assert.equal(items[0].slug, article.slug);
-  assert.equal(calls[0].url.searchParams.get("property"), "herzen-co");
+  assert.equal(calls[0].url.searchParams.get("property"), "herzenco");
   assert.equal(calls[0].url.searchParams.get("status"), "published");
-  assert.equal(calls[0].url.searchParams.get("limit"), "500");
+  assert.equal(calls[0].url.searchParams.has("limit"), false);
+  assert.equal(calls[0].url.searchParams.has("offset"), false);
   assert.equal(calls[0].options.headers.authorization, "Bearer content-token");
 });
 

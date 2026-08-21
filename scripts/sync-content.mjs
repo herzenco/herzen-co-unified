@@ -4,10 +4,9 @@ import { fileURLToPath } from "node:url";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
-const PROPERTY = "herzen-co";
+const PROPERTY = "herzenco";
 const SITE_URL = (process.env.SITE_URL || "https://herzenco.co").replace(/\/$/, "");
 const MANIFEST = ".occ-content-manifest.json";
-const PAGE_SIZE = 500;
 const RESOURCE_START = "<!-- OCC_RESOURCES_START -->";
 const RESOURCE_END = "<!-- OCC_RESOURCES_END -->";
 const SITEMAP_START = "<!-- OCC_RESOURCES_SITEMAP_START -->";
@@ -48,10 +47,11 @@ function mediaUrl(value = "") {
 }
 
 export function normalizePublishedItems(payload) {
-  const items = Array.isArray(payload) ? payload : payload?.data?.items;
-  if (!Array.isArray(items)) throw new Error("OCC content response must contain data.items");
+  const items = Array.isArray(payload) ? payload : payload?.data;
+  if (!Array.isArray(items)) throw new Error("OCC content response must contain a data array");
   return items.map((item) => {
     const slug = String(item?.slug || "");
+    if (item?.property !== PROPERTY) throw new Error("OCC returned content outside the Herzen Co. public property");
     if (item?.status !== "published") throw new Error("OCC returned content outside the requested published set");
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error(`Invalid content slug: ${slug || "(missing)"}`);
     const title = String(item.title || "").trim();
@@ -60,19 +60,16 @@ export function normalizePublishedItems(payload) {
     if (!item.id || !title || !excerpt || !body) throw new Error(`Published item "${slug}" is missing a required field`);
     const publishedAt = isoDate(item.published_at || item.publish_at);
     const updatedAt = isoDate(item.updated_at || item.published_at || item.publish_at);
-    const metadata = item.metadata && typeof item.metadata === "object" && !Array.isArray(item.metadata) ? item.metadata : {};
-    const featuredImage = metadata.featured_image && typeof metadata.featured_image === "object" && !Array.isArray(metadata.featured_image) ? metadata.featured_image : {};
-    const categories = Array.isArray(metadata.categories) ? metadata.categories : [];
-    const tags = Array.isArray(item.tags) ? item.tags : [];
+    const heroImage = item.hero_image && typeof item.hero_image === "object" && !Array.isArray(item.hero_image) ? item.hero_image : {};
     return {
       id: String(item.id), slug, title, excerpt, body, publishedAt, updatedAt,
       seoTitle: String(item.seo_title || item.seo?.title || title).trim(),
       seoDescription: String(item.meta_description || item.seo?.description || excerpt).trim(),
-      heroImageUrl: mediaUrl(featuredImage.url || item.creative_external_url || metadata.image_url),
-      heroImageAlt: String(featuredImage.alt_text || metadata.image_alt || "").trim(),
+      heroImageUrl: mediaUrl(heroImage.url),
+      heroImageAlt: String(heroImage.alt || "").trim(),
       canonicalUrl: String(item.final_url || item.canonical_url || `${SITE_URL}/resources/${slug}/`).trim(),
-      author: String(metadata.author || item.author || "Herzen Co.").trim(),
-      category: String(categories[0] || tags[0] || item.category || "Resources").trim(),
+      author: String(item.author || "Herzen Co.").trim(),
+      category: String(item.category || "Resources").trim(),
     };
   }).sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
 }
@@ -151,28 +148,12 @@ function articleHtml(item, chrome) {
 
 export async function fetchPublishedContent({ apiUrl, token, fetchImpl = fetch }) {
   if (!apiUrl || !token) throw new Error("OCC_CONTENT_API_URL and OCC_CONTENT_API_TOKEN are required");
-  const collected = [];
-  let offset = 0;
-  let expectedCount = null;
-
-  do {
-    const endpoint = new URL(apiUrl);
-    endpoint.searchParams.set("property", PROPERTY);
-    endpoint.searchParams.set("status", "published");
-    endpoint.searchParams.set("limit", String(PAGE_SIZE));
-    endpoint.searchParams.set("offset", String(offset));
-    const response = await fetchImpl(endpoint, { headers: { accept: "application/json", authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) });
-    if (!response.ok) throw new Error(`OCC content request failed (${response.status} ${response.statusText || ""})`.trim());
-    const payload = await response.json();
-    const page = payload?.data?.items;
-    if (!Array.isArray(page)) throw new Error("OCC content response must contain data.items");
-    collected.push(...page);
-    expectedCount = Number.isFinite(Number(payload?.data?.count)) ? Number(payload.data.count) : null;
-    offset += page.length;
-    if (!page.length || page.length < PAGE_SIZE) break;
-  } while (expectedCount === null || offset < expectedCount);
-
-  return normalizePublishedItems(collected);
+  const endpoint = new URL(apiUrl);
+  endpoint.searchParams.set("property", PROPERTY);
+  endpoint.searchParams.set("status", "published");
+  const response = await fetchImpl(endpoint, { headers: { accept: "application/json", authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) });
+  if (!response.ok) throw new Error(`OCC content request failed (${response.status} ${response.statusText || ""})`.trim());
+  return normalizePublishedItems(await response.json());
 }
 
 async function previousSlugs(rootDir) {

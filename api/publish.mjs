@@ -3,7 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 const SITE_URL = (process.env.SITE_URL || "https://herzenco.co").replace(/\/$/, "");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const SHA256 = /^[0-9a-f]{64}$/i;
+const EVENTS = new Set(["content.published", "content.updated", "content.unpublished", "content.archived"]);
 const deliveries = new Map();
 
 function reply(res, status, body) { return res.status(status).json(body); }
@@ -21,15 +21,10 @@ function parseBody(req) {
 }
 
 function validPayload(payload) {
-  return payload.schema_version === 1 && UUID.test(payload.content_item_id || "") &&
-    typeof payload.idempotency_key === "string" && payload.idempotency_key.length > 0 && payload.idempotency_key.length <= 300 &&
-    SHA256.test(payload.approved_content_hash || "") && typeof payload.title === "string" && payload.title.trim().length > 0 &&
-    typeof payload.body === "string" && payload.body.trim().length > 0 && payload.content_type === "article" &&
-    payload.destination === "resource_library" && SLUG.test(payload.slug || "") &&
-    payload.canonical_path === `/resources/${payload.slug}/` && payload.status === "published" &&
-    typeof payload.seo?.title === "string" && payload.seo.title.trim().length > 0 &&
-    typeof payload.seo?.description === "string" && payload.seo.description.trim().length > 0 &&
-    payload.source?.system === "occ";
+  const occurredAt = new Date(String(payload.occurred_at || ""));
+  return UUID.test(payload.event_id || "") && EVENTS.has(payload.event) &&
+    payload.property === "herzenco" && UUID.test(payload.content_id || "") &&
+    SLUG.test(payload.slug || "") && !Number.isNaN(occurredAt.valueOf());
 }
 
 async function triggerDeployment(deployHookUrl, payload) {
@@ -38,10 +33,11 @@ async function triggerDeployment(deployHookUrl, payload) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       source: "occ-content-publishing",
-      content_item_id: payload.content_item_id,
-      idempotency_key: payload.idempotency_key,
-      approved_content_hash: payload.approved_content_hash,
+      event_id: payload.event_id,
+      event: payload.event,
+      content_id: payload.content_id,
       slug: payload.slug,
+      occurred_at: payload.occurred_at,
     }),
     signal: AbortSignal.timeout(10_000),
   });
@@ -74,30 +70,30 @@ export default async function handler(req, res) {
   if (!validPayload(payload)) return reply(res, 400, { error: "invalid_event" });
 
   const requestKey = String(req.headers?.["idempotency-key"] || "");
-  if (requestKey && requestKey !== payload.idempotency_key) return reply(res, 400, { error: "idempotency_key_mismatch" });
+  if (requestKey && requestKey !== payload.event_id) return reply(res, 400, { error: "idempotency_key_mismatch" });
   const finalUrl = `${SITE_URL}/resources/${payload.slug}/`;
   const success = (duplicate = false) => ({
     accepted: true,
     duplicate,
-    id: payload.content_item_id,
+    event_id: payload.event_id,
+    id: payload.content_id,
     final_url: finalUrl,
-    published_at: new Date().toISOString(),
-    publishing_status: "publishing",
+    publishing_status: "building",
   });
 
-  const existing = deliveries.get(payload.idempotency_key);
+  const existing = deliveries.get(payload.event_id);
   if (existing === true) return reply(res, 202, success(true));
 
   try {
     const pending = existing || triggerDeployment(deployHookUrl, payload);
-    if (!existing) remember(payload.idempotency_key, pending);
+    if (!existing) remember(payload.event_id, pending);
     await pending;
-    remember(payload.idempotency_key, true);
-    console.info("OCC publication accepted", { content_item_id: payload.content_item_id, slug: payload.slug });
+    remember(payload.event_id, true);
+    console.info("OCC publication event accepted", { event_id: payload.event_id, content_id: payload.content_id, event: payload.event, slug: payload.slug });
     return reply(res, 202, success());
   } catch (error) {
-    deliveries.delete(payload.idempotency_key);
-    console.error("OCC publication deployment trigger failed", { content_item_id: payload.content_item_id, error: error?.name || "Error" });
+    deliveries.delete(payload.event_id);
+    console.error("OCC publication deployment trigger failed", { event_id: payload.event_id, content_id: payload.content_id, error: error?.name || "Error" });
     return reply(res, 502, { error: "deployment_hook_failed" });
   }
 }
