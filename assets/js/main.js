@@ -76,6 +76,7 @@ const getPageContext = () => {
   else if (path.startsWith("/pricing")) pageType = "pricing";
   else if (path.startsWith("/product-leadership")) pageType = "product_leadership";
   else if (path.startsWith("/custom-builds")) pageType = "custom_project";
+  else if (path.toLowerCase().startsWith("/freedeliverymap")) pageType = "campaign_landing_page";
 
   const properties = {
     page_path: path,

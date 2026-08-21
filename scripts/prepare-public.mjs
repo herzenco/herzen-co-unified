@@ -10,6 +10,7 @@ const entries = [
   "contact",
   "custom-builds",
   "faq",
+  "FreeDeliveryMap",
   "glossary",
   "meeting-booked",
   "pricing",
