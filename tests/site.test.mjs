@@ -87,7 +87,7 @@ function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "content" || entry.name === "docs" || entry.name === "tests" || entry.name === "node_modules" || entry.name === "public") continue;
+      if (entry.name === ".vercel" || entry.name === "content" || entry.name === "docs" || entry.name === "tests" || entry.name === "node_modules" || entry.name === "public") continue;
       out.push(...walk(full));
     } else if (publicExtensions.has(path.extname(entry.name))) {
       out.push(path.relative(root, full));
@@ -97,7 +97,7 @@ function walk(dir) {
 }
 
 function authoredContents(file) {
-  return read(file).replaceAll("https://calendly.com/herzenco/xyren-discover", "");
+  return read(file).replaceAll("https://calendly.com/herzenco/herzen-co-intro-call", "");
 }
 
 for (const file of requiredFiles) {
@@ -125,8 +125,8 @@ for (const page of pages) {
   if (isCampaignPage) {
     const hrefs = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/gi)].map((match) => match[1]);
     assert(!/<nav\b/i.test(html), `${page} should not include site navigation`);
-    assert(hrefs.every((href) => href === "/" || href === "#main" || href === "https://calendly.com/herzenco/xyren-discover"), `${page} should link only to home, its skip target, or Calendly`);
-    assert(hrefs.filter((href) => href === "https://calendly.com/herzenco/xyren-discover").length >= 2, `${page} should repeat the sole conversion CTA`);
+    assert(hrefs.every((href) => href === "/" || href === "#main" || href === "https://calendly.com/herzenco/herzen-co-intro-call"), `${page} should link only to home, its skip target, or Calendly`);
+    assert(hrefs.filter((href) => href === "https://calendly.com/herzenco/herzen-co-intro-call").length >= 2, `${page} should repeat the sole conversion CTA`);
   } else {
     assert(/aria-controls="site-nav-links"/.test(html), `${page} menu button should identify the controlled navigation`);
     assert(/id="site-nav-links"/.test(html), `${page} navigation should have a stable controlled id`);
@@ -226,7 +226,7 @@ assert(/hello@herzenco\.co/.test(contactPage), "Contact metadata should use the 
 assert(!/hello@herzenco\.com/.test(contactPage), "Contact page should not use the old email domain");
 assert(/fetch\("\/api\/inquiry"/.test(siteScript), "Contact form should send JSON to the website inquiry API");
 assert(/response\.ok/.test(siteScript), "Contact form should confirm delivery before tracking success");
-assert(/https:\/\/calendly\.com\/herzenco\/xyren-discover/.test(contactPage), "Contact page should offer direct call scheduling");
+assert(/https:\/\/calendly\.com\/herzenco\/herzen-co-intro-call/.test(contactPage), "Contact page should offer direct call scheduling");
 
 const deliveryMapPage = read("FreeDeliveryMap/index.html");
 assert(/class="campaign-page delivery-map-page"/.test(deliveryMapPage), "Delivery Map page should use the campaign design-system surface");

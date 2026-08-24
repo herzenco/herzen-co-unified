@@ -424,7 +424,7 @@ document.addEventListener("click", (event) => {
   }
 });
 
-document.querySelectorAll('a[href="/contact/"], a[href^="https://calendly.com/herzenco/xyren-discover"]').forEach((link) => {
+document.querySelectorAll('a[href="/contact/"], a[href^="https://calendly.com/herzenco/herzen-co-intro-call"]').forEach((link) => {
   link.addEventListener("click", () => {
     const properties = {
       ...getPageContext(),
