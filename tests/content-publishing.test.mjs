@@ -27,7 +27,7 @@ const article = {
   updated_at: "2026-08-14T18:00:00.000Z",
   seo: { title: "Clearer Product Roadmaps | Herzen Co.", description: "A practical guide to clearer roadmap decisions." },
   hero_image: { url: "https://images.example.test/roadmap.jpg", alt: "A roadmap workshop" },
-  canonical_url: "https://herzenco.co/resources/clearer-product-roadmaps/",
+  canonical_url: "https://www.herzenco.co/resources/clearer-product-roadmaps/",
   author: "Herzen Co.",
   category: "Operations",
 };
@@ -59,7 +59,7 @@ test("OCC identifier event authenticates, validates, and triggers a deployment",
     assert.equal(deployEvent.event_id, publication.event_id);
     assert.equal(deployEvent.content_id, publication.content_id);
     assert.doesNotMatch(JSON.stringify(deployEvent), /title|body|approved_content_hash/);
-    assert.equal(res.body.final_url, `https://herzenco.co/resources/${publication.slug}/`);
+    assert.equal(res.body.final_url, `https://www.herzenco.co/resources/${publication.slug}/`);
   } finally { globalThis.fetch = originalFetch; }
 });
 

@@ -5,7 +5,11 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
 const PROPERTY = "herzenco";
-const SITE_URL = (process.env.SITE_URL || "https://herzenco.co").replace(/\/$/, "");
+const SITE_URL = (() => {
+  const url = new URL(process.env.SITE_URL || "https://www.herzenco.co");
+  if (url.hostname === "herzenco.co") url.hostname = "www.herzenco.co";
+  return url.href.replace(/\/$/, "");
+})();
 const MANIFEST = ".occ-content-manifest.json";
 const RESOURCE_START = "<!-- OCC_RESOURCES_START -->";
 const RESOURCE_END = "<!-- OCC_RESOURCES_END -->";

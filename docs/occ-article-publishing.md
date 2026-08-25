@@ -76,7 +76,7 @@ Success is an unpaginated complete collection:
         "url": "https://cdn.example/hero.jpg",
         "alt": "Alternative text"
       },
-      "canonical_url": "https://herzenco.co/resources/example-article/",
+      "canonical_url": "https://www.herzenco.co/resources/example-article/",
       "author": "Herzen Co.",
       "category": "Operations"
     }
@@ -95,7 +95,7 @@ OCC_CONTENT_API_URL=https://operations.herzenco.co/api/v1/content
 OCC_CONTENT_API_TOKEN=
 HERZENCO_PUBLISH_WEBHOOK_SECRET=
 VERCEL_DEPLOY_HOOK_URL=
-SITE_URL=https://herzenco.co
+SITE_URL=https://www.herzenco.co
 ```
 
 OCC:

@@ -18,15 +18,15 @@ Best-fit customers:
 - Small and midsize businesses that need custom systems without the cost or overhead of a full development team.
 
 Important pages:
-- Home: https://herzenco.co/
-- Product Leadership: https://herzenco.co/product-leadership/
-- Custom Builds: https://herzenco.co/custom-builds/
-- Pricing: https://herzenco.co/pricing/
-- Process: https://herzenco.co/process/
-- Resources: https://herzenco.co/resources/
-- FAQ: https://herzenco.co/faq/
-- Product Leadership Glossary: https://herzenco.co/glossary/
-- Contact: https://herzenco.co/contact/
+- Home: https://www.herzenco.co/
+- Product Leadership: https://www.herzenco.co/product-leadership/
+- Custom Builds: https://www.herzenco.co/custom-builds/
+- Pricing: https://www.herzenco.co/pricing/
+- Process: https://www.herzenco.co/process/
+- Resources: https://www.herzenco.co/resources/
+- FAQ: https://www.herzenco.co/faq/
+- Product Leadership Glossary: https://www.herzenco.co/glossary/
+- Contact: https://www.herzenco.co/contact/
 
 Contact:
 - Email: hello@herzenco.com

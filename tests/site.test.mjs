@@ -25,6 +25,7 @@ const requiredFiles = [
   "sitemap.xml",
   "llms.txt",
   "site.webmanifest",
+  "vercel.json",
   "assets/css/styles.css",
   "assets/js/main.js",
   "assets/img/founder-working.jpeg",
@@ -87,7 +88,7 @@ function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "content" || entry.name === "docs" || entry.name === "tests" || entry.name === "node_modules" || entry.name === "public") continue;
+      if (entry.name === ".vercel" || entry.name === "content" || entry.name === "docs" || entry.name === "tests" || entry.name === "node_modules" || entry.name === "public") continue;
       out.push(...walk(full));
     } else if (publicExtensions.has(path.extname(entry.name))) {
       out.push(path.relative(root, full));
@@ -109,7 +110,7 @@ for (const page of pages) {
   const isCampaignPage = page === "FreeDeliveryMap/index.html";
   assert(/<title>[^<]{15,70}<\/title>/i.test(html), `${page} needs a focused title tag`);
   assert(/<meta name="description" content="[^"]{50,170}"/i.test(html), `${page} needs a meta description`);
-  assert(/<link rel="canonical" href="https:\/\/herzenco\.co\/[^"]*"/i.test(html), `${page} needs canonical URL`);
+  assert(/<link rel="canonical" href="https:\/\/www\.herzenco\.co\/[^"]*"/i.test(html), `${page} needs a www canonical URL`);
   assert(/\/assets\/css\/styles\.css\?v=\d+[a-z0-9]*/i.test(html), `${page} should load a versioned shared stylesheet`);
   assert(html.includes('/assets/brand/logo-1a-black.png'), `${page} should use the approved primary logo in the header`);
   assert(html.includes('/assets/brand/logo-1a-white.png'), `${page} should use the approved reversed logo in the footer`);
@@ -149,8 +150,20 @@ for (const file of publicFiles) {
     assert(!contents.includes(term), `Retired website offer found in ${file}: ${term}`);
   }
 
-  assert(!contents.includes("https://herzenco.com"), `Incorrect canonical domain found in ${file}`);
+  assert(!contents.includes("https://herzenco.com"), `Incorrect .com domain found in ${file}`);
+  assert(!contents.includes("https://herzenco.co"), `Non-www website URL found in ${file}`);
 }
+
+const vercelConfig = JSON.parse(read("vercel.json"));
+assert(
+  vercelConfig.redirects?.some((redirect) =>
+    redirect.source === "/:path*" &&
+    redirect.destination === "https://www.herzenco.co/:path*" &&
+    redirect.permanent === true &&
+    redirect.has?.some((condition) => condition.type === "host" && condition.value === "herzenco.co")
+  ),
+  "Vercel should permanently redirect the apex host to www while preserving the path"
+);
 
 const notFoundPage = read("404.html");
 assert(/<meta name="robots" content="noindex">/.test(notFoundPage), "404 page should not be indexed");
