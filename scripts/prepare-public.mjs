@@ -11,6 +11,7 @@ const entries = [
   "custom-builds",
   "faq",
   "FreeDeliveryMap",
+  "free-delivery-map",
   "glossary",
   "meeting-booked",
   "pricing",

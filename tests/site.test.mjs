@@ -12,6 +12,7 @@ const pages = [
   "resources/index.html",
   "faq/index.html",
   "FreeDeliveryMap/index.html",
+  "free-delivery-map/index.html",
   "glossary/index.html",
   "meeting-booked/index.html",
   "about/index.html",
@@ -62,6 +63,13 @@ const retiredWebsiteOfferTerms = [
   "website support",
 ];
 
+const campaignPages = ["FreeDeliveryMap/index.html", "free-delivery-map/index.html"];
+
+const campaignBookingUrls = new Set([
+  "https://calendly.com/herzenco/xyren-discover",
+  "https://calendly.com/herzenco/herzen-co-intro-call",
+]);
+
 const publicExtensions = new Set([
   ".html",
   ".css",
@@ -107,7 +115,7 @@ for (const file of requiredFiles) {
 
 for (const page of pages) {
   const html = read(page);
-  const isCampaignPage = page === "FreeDeliveryMap/index.html";
+  const isCampaignPage = campaignPages.includes(page);
   assert(/<title>[^<]{15,70}<\/title>/i.test(html), `${page} needs a focused title tag`);
   assert(/<meta name="description" content="[^"]{50,170}"/i.test(html), `${page} needs a meta description`);
   assert(/<link rel="canonical" href="https:\/\/www\.herzenco\.co\/[^"]*"/i.test(html), `${page} needs a www canonical URL`);
@@ -126,8 +134,8 @@ for (const page of pages) {
   if (isCampaignPage) {
     const hrefs = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/gi)].map((match) => match[1]);
     assert(!/<nav\b/i.test(html), `${page} should not include site navigation`);
-    assert(hrefs.every((href) => href === "/" || href === "#main" || href === "https://calendly.com/herzenco/xyren-discover"), `${page} should link only to home, its skip target, or Calendly`);
-    assert(hrefs.filter((href) => href === "https://calendly.com/herzenco/xyren-discover").length >= 2, `${page} should repeat the sole conversion CTA`);
+    assert(hrefs.every((href) => href === "/" || href === "#main" || campaignBookingUrls.has(href)), `${page} should link only to home, its skip target, or Calendly`);
+    assert(hrefs.filter((href) => campaignBookingUrls.has(href)).length >= 2, `${page} should repeat the sole conversion CTA`);
   } else {
     assert(/aria-controls="site-nav-links"/.test(html), `${page} menu button should identify the controlled navigation`);
     assert(/id="site-nav-links"/.test(html), `${page} navigation should have a stable controlled id`);
@@ -241,12 +249,24 @@ assert(/fetch\("\/api\/inquiry"/.test(siteScript), "Contact form should send JSO
 assert(/response\.ok/.test(siteScript), "Contact form should confirm delivery before tracking success");
 assert(/https:\/\/calendly\.com\/herzenco\/xyren-discover/.test(contactPage), "Contact page should offer direct call scheduling");
 
-const deliveryMapPage = read("FreeDeliveryMap/index.html");
-assert(/class="campaign-page delivery-map-page"/.test(deliveryMapPage), "Delivery Map page should use the campaign design-system surface");
+for (const campaignPage of campaignPages) {
+  assert(/class="campaign-page delivery-map-page"/.test(read(campaignPage)), `${campaignPage} should use the campaign design-system surface`);
+}
 assert(/\.delivery-hero[\s\S]*var\(--container-max\)/.test(siteStyles), "Delivery Map hero should use the shared container width token");
 assert(/\.delivery-outcomes[\s\S]*var\(--container-max\)/.test(siteStyles), "Delivery Map sections should use the shared container width token");
 assert(/\.delivery-map-card[\s\S]*border: 1px solid var\(--border-hairline\)/.test(siteStyles), "Delivery Map card should use the shared hairline border");
 assert(/\.campaign-header \.brand-logo[\s\S]*height: 34px/.test(siteStyles), "Campaign header should use the approved 34px horizontal logo treatment");
 assert(!/\.delivery-close[^}]*background: var\(--coral\)/.test(siteStyles), "Delivery Map close should not use an off-pattern clay color block");
+
+const adLandingPage = read("free-delivery-map/index.html");
+assert(/<link rel="canonical" href="https:\/\/www\.herzenco\.co\/free-delivery-map\/">/.test(adLandingPage), "Ad landing page must self-canonicalize to the lowercase campaign path");
+assert(/<meta property="og:url" content="https:\/\/www\.herzenco\.co\/free-delivery-map\/">/.test(adLandingPage), "Ad landing page og:url must match the ad final URL");
+assert(!/xyren-discover/.test(adLandingPage), "Ad landing page must use the current booking destination");
+const sitemapXml = read("sitemap.xml");
+assert(sitemapXml.includes("https://www.herzenco.co/free-delivery-map/"), "Sitemap should list the ad landing page");
+assert(!sitemapXml.includes("https://www.herzenco.co/FreeDeliveryMap/"), "Sitemap should not list the superseded campaign path");
+const robotsTxt = read("robots.txt");
+assert(/User-agent: AdsBot-Google\nAllow: \//.test(robotsTxt), "robots.txt should explicitly allow AdsBot-Google");
+assert(/User-agent: AdsBot-Google-Mobile\nAllow: \//.test(robotsTxt), "robots.txt should explicitly allow AdsBot-Google-Mobile");
 
 console.log(`Verified ${pages.length} pages and ${publicFiles.length} public files.`);
