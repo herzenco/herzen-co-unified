@@ -17,6 +17,8 @@ const publication = {
 
 const article = {
   id: publication.content_id,
+  revision: 3,
+  revision_digest: "a".repeat(64),
   property: "herzenco",
   status: "published",
   slug: publication.slug,
@@ -118,6 +120,7 @@ test("OCC pull uses server authentication and the finalized filters", async () =
 
 test("unexpected non-published OCC records fail closed", () => {
   assert.throws(() => normalizePublishedItems([{ ...article, status: "draft" }]), /outside the requested published set/);
+  assert.throws(() => normalizePublishedItems([{ ...article, revision_digest: "not-a-digest" }]), /missing a required field/);
 });
 
 test("generation creates current pages and removes stale generated pages", async () => {
@@ -131,6 +134,9 @@ test("generation creates current pages and removes stale generated pages", async
   const listing = await fs.readFile(path.join(root, "resources", "index.html"), "utf8");
   const sitemap = await fs.readFile(path.join(root, "sitemap.xml"), "utf8");
   assert.match(html, /<h1>Clearer Product Roadmaps<\/h1>/);
+  assert.match(html, /<meta name="occ:content-id" content="22222222-2222-4222-8222-222222222222">/);
+  assert.match(html, /<meta name="occ:revision" content="3">/);
+  assert.match(html, new RegExp(`<meta name="occ:revision-digest" content="${"a".repeat(64)}">`));
   assert.match(html, /GTM-K9SZRQ94/);
   assert.match(listing, /\/resources\/clearer-product-roadmaps\//);
   assert.match(sitemap, /\/resources\/clearer-product-roadmaps\//);

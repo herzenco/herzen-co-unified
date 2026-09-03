@@ -15,6 +15,7 @@ const RESOURCE_START = "<!-- OCC_RESOURCES_START -->";
 const RESOURCE_END = "<!-- OCC_RESOURCES_END -->";
 const SITEMAP_START = "<!-- OCC_RESOURCES_SITEMAP_START -->";
 const SITEMAP_END = "<!-- OCC_RESOURCES_SITEMAP_END -->";
+const SHA256 = /^[0-9a-f]{64}$/;
 
 const sanitizer = {
   allowedTags: ["p", "br", "strong", "em", "s", "blockquote", "ul", "ol", "li", "h2", "h3", "h4", "h5", "h6", "a", "code", "pre", "hr", "img", "figure", "figcaption", "table", "thead", "tbody", "tr", "th", "td"],
@@ -61,12 +62,16 @@ export function normalizePublishedItems(payload) {
     const title = String(item.title || "").trim();
     const excerpt = String(item.excerpt || item.meta_description || item.brief || "").trim();
     const body = String(item.body || "").trim();
-    if (!item.id || !title || !excerpt || !body) throw new Error(`Published item "${slug}" is missing a required field`);
+    const revision = Number(item.revision);
+    const revisionDigest = String(item.revision_digest || "").trim();
+    if (!item.id || !title || !excerpt || !body || !Number.isInteger(revision) || revision < 1 || !SHA256.test(revisionDigest)) {
+      throw new Error(`Published item "${slug}" is missing a required field`);
+    }
     const publishedAt = isoDate(item.published_at || item.publish_at);
     const updatedAt = isoDate(item.updated_at || item.published_at || item.publish_at);
     const heroImage = item.hero_image && typeof item.hero_image === "object" && !Array.isArray(item.hero_image) ? item.hero_image : {};
     return {
-      id: String(item.id), slug, title, excerpt, body, publishedAt, updatedAt,
+      id: String(item.id), revision, revisionDigest, slug, title, excerpt, body, publishedAt, updatedAt,
       seoTitle: String(item.seo_title || item.seo?.title || title).trim(),
       seoDescription: String(item.meta_description || item.seo?.description || excerpt).trim(),
       heroImageUrl: mediaUrl(heroImage.url),
@@ -125,6 +130,9 @@ function articleHtml(item, chrome) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${escapeHtml(item.seoTitle)}</title>
     <meta name="description" content="${escapeHtml(item.seoDescription)}">
+    <meta name="occ:content-id" content="${escapeHtml(item.id)}">
+    <meta name="occ:revision" content="${item.revision}">
+    <meta name="occ:revision-digest" content="${item.revisionDigest}">
     <link rel="canonical" href="${escapeHtml(canonical)}">
     <meta property="og:title" content="${escapeHtml(item.seoTitle)}">
     <meta property="og:description" content="${escapeHtml(item.seoDescription)}">

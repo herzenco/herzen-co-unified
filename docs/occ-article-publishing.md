@@ -2,6 +2,8 @@
 
 This is the reusable contract for an OCC-owned content library. OCC is the source of truth. The website never accepts article bodies through the webhook: it receives a signed identifier-only event, starts an immutable deployment, and pulls the complete published collection from OCC during the build.
 
+Every generated article page includes non-secret `occ:content-id`, `occ:revision`, and `occ:revision-digest` meta tags copied from the authenticated OCC content response. OCC verifies these exact markers after deployment; an HTTP 200 without the expected immutable revision digest is not publication success.
+
 ## End-to-end lifecycle
 
 1. A human approves a complete website article in OCC.
