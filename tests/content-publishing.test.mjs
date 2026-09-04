@@ -134,6 +134,23 @@ test("public Preview builds never require or partially configure the production 
   );
 });
 
+test("production builds accept only the canonical project-scoped OCC 2.0 endpoint", () => {
+  const canonical = "https://occ.herzenco.co/api/v1/content?project_id=dd163145-25c1-4cbf-a4a1-aba372b59da2";
+  assert.equal(contentSyncMode({ vercelEnvironment: "production", apiUrl: canonical, token: "secret" }), "required");
+  assert.throws(
+    () => contentSyncMode({ vercelEnvironment: "production", apiUrl: "https://operations.herzenco.co/api/v1/content", token: "secret" }),
+    /canonical project-scoped OCC 2\.0 API/,
+  );
+  assert.throws(
+    () => contentSyncMode({ vercelEnvironment: "production", apiUrl: "https://occ.herzenco.co/api/v1/content", token: "secret" }),
+    /canonical project-scoped OCC 2\.0 API/,
+  );
+  assert.throws(
+    () => contentSyncMode({ vercelEnvironment: "production", apiUrl: "not-a-url", token: "secret" }),
+    /endpoint is invalid/,
+  );
+});
+
 test("unexpected non-published OCC records fail closed", () => {
   assert.throws(() => normalizePublishedItems([{ ...article, status: "draft" }]), /outside the requested published set/);
   assert.throws(() => normalizePublishedItems([{ ...article, revision_digest: "not-a-digest" }]), /missing a required field/);

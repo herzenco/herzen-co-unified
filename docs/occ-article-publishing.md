@@ -47,7 +47,7 @@ The webhook must not contain article copy, approval notes, prompts, credentials,
 
 ## Published-content pull API
 
-`GET https://operations.herzenco.co/api/v1/content?property=herzenco&status=published`
+`GET https://occ.herzenco.co/api/v1/content?project_id=<company-project-uuid>&property=herzenco&status=published`
 
 Header:
 
@@ -64,6 +64,8 @@ Success is an unpaginated complete collection:
       "id": "22222222-2222-4222-8222-222222222222",
       "property": "herzenco",
       "status": "published",
+      "revision": 1,
+      "revision_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "slug": "example-article",
       "title": "Example article",
       "excerpt": "A concise summary.",
@@ -93,7 +95,7 @@ The website must fail the build if the request fails, the response is not a `dat
 Website:
 
 ```dotenv
-OCC_CONTENT_API_URL=https://operations.herzenco.co/api/v1/content
+OCC_CONTENT_API_URL=https://occ.herzenco.co/api/v1/content?project_id=<company-project-uuid>
 OCC_CONTENT_API_TOKEN=
 HERZENCO_PUBLISH_WEBHOOK_SECRET=
 VERCEL_DEPLOY_HOOK_URL=
@@ -103,13 +105,12 @@ SITE_URL=https://www.herzenco.co
 OCC:
 
 ```dotenv
-HERZENCO_CONTENT_API_TOKEN=
 HERZENCO_PUBLISH_WEBHOOK_URL=https://www.herzenco.co/api/publish
 HERZENCO_PUBLISH_WEBHOOK_SECRET=
 CRON_SECRET=
 ```
 
-`OCC_CONTENT_API_TOKEN` must exactly match `HERZENCO_CONTENT_API_TOKEN`. Both projects must use the same `HERZENCO_PUBLISH_WEBHOOK_SECRET`. All four credential or hook values are server-only and must never be exposed in browser JavaScript or committed to Git.
+`OCC_CONTENT_API_TOKEN` is a dedicated, revocable website-build credential scoped only to `content:read` for the company project. It is distinct from the site executor credential and every R2 credential. Both projects must use the same `HERZENCO_PUBLISH_WEBHOOK_SECRET`. All credential or hook values are server-only and must never be exposed in browser JavaScript or committed to Git.
 
 The public repository's Preview deployments intentionally do not receive
 `OCC_CONTENT_API_URL` or `OCC_CONTENT_API_TOKEN`. When both are absent in
@@ -117,6 +118,9 @@ The public repository's Preview deployments intentionally do not receive
 synthetic publishing suite without pulling OCC content. A partial Preview
 configuration and every non-Preview build without both values fail closed.
 Production alone performs the authenticated complete collection pull.
+It also rejects any production endpoint other than the HTTPS, project-scoped
+`occ.herzenco.co/api/v1/content` boundary so a legacy control plane cannot be
+selected by environment drift.
 
 Use the direct `www` webhook host. Do not depend on the apex-domain redirect for an authenticated POST because clients can remove the `Authorization` header when a redirect crosses hosts.
 
