@@ -111,6 +111,13 @@ CRON_SECRET=
 
 `OCC_CONTENT_API_TOKEN` must exactly match `HERZENCO_CONTENT_API_TOKEN`. Both projects must use the same `HERZENCO_PUBLISH_WEBHOOK_SECRET`. All four credential or hook values are server-only and must never be exposed in browser JavaScript or committed to Git.
 
+The public repository's Preview deployments intentionally do not receive
+`OCC_CONTENT_API_URL` or `OCC_CONTENT_API_TOKEN`. When both are absent in
+`VERCEL_ENV=preview`, the build validates the committed public shell and the
+synthetic publishing suite without pulling OCC content. A partial Preview
+configuration and every non-Preview build without both values fail closed.
+Production alone performs the authenticated complete collection pull.
+
 Use the direct `www` webhook host. Do not depend on the apex-domain redirect for an authenticated POST because clients can remove the `Authorization` header when a redirect crosses hosts.
 
 ## Reliability and security requirements

@@ -198,5 +198,31 @@ export async function syncContent(options = {}) {
   return items;
 }
 
+export function contentSyncMode({
+  vercelEnvironment = process.env.VERCEL_ENV,
+  apiUrl = process.env.OCC_CONTENT_API_URL,
+  token = process.env.OCC_CONTENT_API_TOKEN,
+} = {}) {
+  const hasApiUrl = Boolean(apiUrl);
+  const hasToken = Boolean(token);
+  if (hasApiUrl !== hasToken) {
+    throw new Error("OCC content sync configuration is incomplete");
+  }
+  // The repository is public. Production-only OCC credentials must never be copied into Preview,
+  // where untrusted branch code could read them. A credential-free preview validates the static
+  // shell and synthetic publishing tests; production still performs the authenticated full pull.
+  if (vercelEnvironment === "preview" && !hasApiUrl) return "skip_preview";
+  return "required";
+}
+
+async function runContentSyncCli() {
+  if (contentSyncMode() === "skip_preview") {
+    console.log("Skipped authenticated OCC content pull for credential-free Preview build.");
+    return;
+  }
+  const items = await syncContent();
+  console.log(`Generated ${items.length} OCC resource article(s).`);
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) syncContent().then((items) => console.log(`Generated ${items.length} OCC resource article(s).`)).catch((error) => { console.error(`OCC content sync failed: ${error.message}`); process.exitCode = 1; });
+if (isMain) runContentSyncCli().catch((error) => { console.error(`OCC content sync failed: ${error.message}`); process.exitCode = 1; });

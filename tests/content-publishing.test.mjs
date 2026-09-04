@@ -4,7 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import publishHandler, { resetPublishStateForTests } from "../api/publish.mjs";
-import { fetchPublishedContent, generateContent, normalizePublishedItems, sanitizeMarkdown } from "../scripts/sync-content.mjs";
+import {
+  contentSyncMode, fetchPublishedContent, generateContent, normalizePublishedItems, sanitizeMarkdown,
+} from "../scripts/sync-content.mjs";
 
 const publication = {
   event_id: "11111111-1111-4111-8111-111111111111",
@@ -116,6 +118,20 @@ test("OCC pull uses server authentication and the finalized filters", async () =
   assert.equal(calls[0].url.searchParams.has("limit"), false);
   assert.equal(calls[0].url.searchParams.has("offset"), false);
   assert.equal(calls[0].options.headers.authorization, "Bearer content-token");
+});
+
+test("public Preview builds never require or partially configure the production OCC credential", () => {
+  assert.equal(contentSyncMode({ vercelEnvironment: "preview", apiUrl: "", token: "" }), "skip_preview");
+  assert.equal(contentSyncMode({ vercelEnvironment: "production", apiUrl: "", token: "" }), "required");
+  assert.equal(contentSyncMode({ vercelEnvironment: "preview", apiUrl: "https://occ.example.test", token: "secret" }), "required");
+  assert.throws(
+    () => contentSyncMode({ vercelEnvironment: "preview", apiUrl: "https://occ.example.test", token: "" }),
+    /incomplete/,
+  );
+  assert.throws(
+    () => contentSyncMode({ vercelEnvironment: "preview", apiUrl: "", token: "secret" }),
+    /incomplete/,
+  );
 });
 
 test("unexpected non-published OCC records fail closed", () => {
