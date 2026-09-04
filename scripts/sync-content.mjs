@@ -212,6 +212,20 @@ export function contentSyncMode({
   // where untrusted branch code could read them. A credential-free preview validates the static
   // shell and synthetic publishing tests; production still performs the authenticated full pull.
   if (vercelEnvironment === "preview" && !hasApiUrl) return "skip_preview";
+  if (vercelEnvironment === "production" && hasApiUrl) {
+    let endpoint;
+    try { endpoint = new URL(apiUrl); }
+    catch { throw new Error("OCC content sync production endpoint is invalid"); }
+    const projectId = endpoint.searchParams.get("project_id") || "";
+    if (
+      endpoint.protocol !== "https:"
+      || endpoint.hostname !== "occ.herzenco.co"
+      || endpoint.pathname !== "/api/v1/content"
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(projectId)
+    ) {
+      throw new Error("OCC content sync production endpoint must use the canonical project-scoped OCC 2.0 API");
+    }
+  }
   return "required";
 }
 
