@@ -1,6 +1,6 @@
 # Codex Work Log
 
-> Last updated: 2026-08-25 | Session #1 | Agent: Codex
+> Last updated: 2026-09-02 | Session #2 | Agent: Codex
 
 ## Purpose and evidence boundary
 
@@ -536,6 +536,20 @@ Never commit real values. Required names are documented in `.env.example`.
 10. Move or clearly label `PROJECT-BRIEF.md` if the Analytics Hub remains a separate project.
 
 ## Session Log
+
+### Session #2 — 2026-09-02
+**Agent:** Codex
+**Branch:** `codex/her-173-site-verification-marker`
+**Summary:** Added an immutable OCC revision marker to every generated article so the OCC can distinguish a live expected revision from a merely successful HTTP response.
+
+**Done:**
+
+- Required and validated the OCC `revision` and SHA-256 `revision_digest` in the authenticated build-time content response.
+- Emitted non-secret `occ:content-id`, `occ:revision`, and `occ:revision-digest` meta tags in generated article HTML.
+- Added regression coverage for malformed digests and exact generated markers; all 14 native tests pass.
+- Kept the identifier-only webhook payload unchanged. The production build remains intentionally unavailable without the existing server-only OCC content variables.
+
+**Open:** OCC still needs to schedule, deliver, poll, and record the live digest before HER-173 end-to-end acceptance.
 
 ### Session #1 — 2026-08-25
 **Agent:** Codex  
