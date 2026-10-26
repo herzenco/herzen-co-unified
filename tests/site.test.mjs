@@ -8,7 +8,9 @@ const pages = [
   "product-leadership/index.html",
   "custom-builds/index.html",
   "pricing/index.html",
+  "privacy-policy/index.html",
   "process/index.html",
+  "terms-and-conditions/index.html",
   "resources/index.html",
   "faq/index.html",
   "FreeDeliveryMap/index.html",
@@ -65,9 +67,13 @@ const retiredWebsiteOfferTerms = [
 
 const campaignPages = ["FreeDeliveryMap/index.html", "free-delivery-map/index.html"];
 
-const campaignBookingUrls = new Set([
-  "https://calendly.com/herzenco/xyren-discover",
-  "https://calendly.com/herzenco/herzen-co-intro-call",
+const bookingUrl = "https://calendly.com/herzenco/herzen-co-intro-call";
+const campaignHrefs = new Set([
+  "/",
+  "#main",
+  bookingUrl,
+  "/privacy-policy/",
+  "/terms-and-conditions/",
 ]);
 
 const publicExtensions = new Set([
@@ -106,7 +112,20 @@ function walk(dir) {
 }
 
 function authoredContents(file) {
-  return read(file).replaceAll("https://calendly.com/herzenco/xyren-discover", "");
+  return read(file);
+}
+
+const staleEmail = ["hello@", "herzenco", ".com"].join("");
+
+function walkRepo(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === ".git" || entry.name === "node_modules" || entry.name === "public" || entry.name === ".vercel") continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walkRepo(full));
+    else out.push(path.relative(root, full));
+  }
+  return out;
 }
 
 for (const file of requiredFiles) {
@@ -134,8 +153,8 @@ for (const page of pages) {
   if (isCampaignPage) {
     const hrefs = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/gi)].map((match) => match[1]);
     assert(!/<nav\b/i.test(html), `${page} should not include site navigation`);
-    assert(hrefs.every((href) => href === "/" || href === "#main" || campaignBookingUrls.has(href)), `${page} should link only to home, its skip target, or Calendly`);
-    assert(hrefs.filter((href) => campaignBookingUrls.has(href)).length >= 2, `${page} should repeat the sole conversion CTA`);
+    assert(hrefs.every((href) => campaignHrefs.has(href)), `${page} should link only to home, its skip target, Calendly, or legal pages`);
+    assert(hrefs.filter((href) => href === bookingUrl).length >= 2, `${page} should repeat the sole conversion CTA`);
   } else {
     assert(/aria-controls="site-nav-links"/.test(html), `${page} menu button should identify the controlled navigation`);
     assert(/id="site-nav-links"/.test(html), `${page} navigation should have a stable controlled id`);
@@ -160,6 +179,8 @@ for (const file of publicFiles) {
 
   assert(!contents.includes("https://herzenco.com"), `Incorrect .com domain found in ${file}`);
   assert(!contents.includes("https://herzenco.co"), `Non-www website URL found in ${file}`);
+  assert(!contents.includes("xyren-discover"), `Legacy Calendly slug found in ${file}`);
+  assert(!contents.includes(staleEmail), `Stale email domain found in ${file}`);
 }
 
 const vercelConfig = JSON.parse(read("vercel.json"));
@@ -187,7 +208,14 @@ assert(/--clay-500:\s*#9c5c3e/i.test(siteStyles), "Design system should use the 
 assert(/Newsreader/.test(siteStyles) && /Jost/.test(siteStyles), "Design system should load the editorial font pairing");
 assert(/Embedded execution partner/i.test(homepage), "Homepage should lead with embedded execution positioning");
 assert(!/Answering the questions buyers ask first/i.test(homepage), "Homepage should not use generic buyer-question section framing");
+assert(/<title>Fractional Product Leadership for Founders \| Herzen Co\.<\/title>/.test(homepage), "Homepage title should describe fractional product leadership");
+assert(/property="og:title" content="Fractional Product Leadership for Founders \| Herzen Co\."/.test(homepage), "Homepage social title should match the document title");
+assert(/\$2,000\/month/.test(homepage), "Homepage description should include the monthly starting price");
+assert(/Custom <span>scope<\/span>/.test(homepage), "Custom scope price should keep a space for copy and paste");
+assert(/"contactType": "sales"/.test(homepage), "Homepage organization schema should include a sales contact point");
 assert(/<a class="button" href="\/contact\/">Start a conversation<\/a>/.test(homepage), "Homepage primary CTA should set an accurate contact expectation");
+assert(homepage.includes(bookingUrl), "Homepage closing band should offer direct booking");
+assert(/mailto:hello@herzenco\.co/.test(homepage), "Homepage should offer a direct email link");
 assert(!/See the primary offer/.test(homepage), "Homepage CTA should be concise and lead-focused");
 assert(/editorial-hero-media/.test(homepage), "Homepage hero image should use the editorial image wrapper");
 assert(/editorial-hero-media img[\s\S]*height: auto/.test(siteStyles), "Homepage hero image should not use fixed-height letterboxing");
@@ -197,12 +225,21 @@ assert(/@vercel\/analytics/.test(siteScript), "Shared script should identify the
 assert(/Lead CTA Clicked/.test(siteScript), "Shared script should track lead CTA clicks");
 for (const page of [...pages, "404.html"]) {
   const html = read(page);
-  assert(/googletagmanager\.com\/gtm\.js[\s\S]*GTM-K9SZRQ94/.test(html), `${page} should install GTM in the document head`);
-  assert(/googletagmanager\.com\/ns\.html\?id=GTM-K9SZRQ94/.test(html), `${page} should install the GTM noscript fallback`);
-  assert(/googletagmanager\.com\/gtag\/js\?id=AW-11011556680/.test(html), `${page} should load the Google Ads tag`);
-  assert(/gtag\('config', 'AW-11011556680'\)/.test(html), `${page} should configure the Google Ads account`);
+  assert(!/googletagmanager\.com\/gtm\.js/.test(html), `${page} should not install GTM inline`);
+  assert(!/googletagmanager\.com\/ns\.html\?id=GTM-K9SZRQ94/.test(html), `${page} should not install the GTM noscript fallback`);
+  assert(!/googletagmanager\.com\/gtag\/js/.test(html), `${page} should not load the Google Ads tag inline`);
+  assert(!/gtag\('config', 'AW-11011556680'\)/.test(html), `${page} should not configure Google Ads inline`);
+  assert(/data-privacy-choices/.test(html), `${page} should offer a privacy choices control`);
 }
-assert(!/analytics-consent|analytics-preferences|ANALYTICS_CONSENT_KEY/.test(siteScript + siteStyles), "Analytics consent controls should be removed");
+assert(/createPrivacyControls\(/.test(siteScript), "Shared script should gate analytics and advertising behind privacy choices");
+assert(/herzen_privacy_preferences/.test(siteScript), "Privacy choices should persist in local storage");
+assert(/GTM-K9SZRQ94/.test(siteScript), "Consented advertising should load Google Tag Manager GTM-K9SZRQ94");
+assert(/AW-11011556680/.test(siteScript), "Consented advertising should load Google Ads AW-11011556680");
+assert(/if \(preferences\.analytics\) \{\s*initializeMixpanel\(\)/.test(siteScript), "Mixpanel should load only after analytics consent");
+assert(/loadVercelAnalytics\(\)/.test(siteScript), "Vercel Web Analytics should remain available after analytics consent");
+assert(/if \(preferences\.advertising\) \{\s*loadGoogleTracking\(\)/.test(siteScript), "Google tags should load only after advertising consent");
+assert(/a\[href\^="https:\/\/calendly\.com\/herzenco\/"\]/.test(siteScript), "Lead CTA tracking should include Herzen Co. Calendly links");
+assert(!/xyren-discover/.test(siteScript), "Lead CTA tracking should not use the legacy Calendly slug");
 assert(/page_viewed/.test(siteScript), "Mixpanel should track page views");
 assert(/scroll_depth_reached/.test(siteScript), "Mixpanel should track scroll depth");
 assert(/page_engagement_completed/.test(siteScript), "Mixpanel should track active page engagement");
@@ -237,17 +274,20 @@ assert(!/What is fractional product leadership\?/.test(resourcesPage), "Resource
 assert(!/class="resource-row"/.test(resourcesPage), "Resources should not use the old utility-list layout");
 assert(/OCC_RESOURCES_START[\s\S]*OCC_RESOURCES_END/.test(resourcesPage), "Resources should retain its OCC-managed publishing region");
 assert(/No resources published yet\.|class="article-grid"/.test(resourcesPage), "Resources should show either the empty state or OCC-generated article cards");
+assert(resourcesPage.includes(bookingUrl), "Shared footer should offer direct booking");
+assert(/mailto:hello@herzenco\.co/.test(resourcesPage), "Shared footer should offer the public email address");
 
 const contactPage = read("contact/index.html");
+const contactMain = contactPage.match(/<main\b[^>]*>[\s\S]*?<\/main>/i)?.[1] || "";
 assert(/action="\/api\/inquiry"/.test(contactPage), "Contact form should submit through the website inquiry endpoint");
 assert(/data-form-status/.test(contactPage), "Contact form should provide an accessible submission status");
 assert(/name="website"/.test(contactPage), "Contact form should include a spam honeypot");
-assert(!/mailto:/i.test(contactPage), "Contact page should keep inquiries inside the website");
+assert(!/mailto:/i.test(contactMain), "Contact page should keep inquiries inside the website");
 assert(/hello@herzenco\.co/.test(contactPage), "Contact metadata should use the correct Herzen Co. email address");
 assert(!/hello@herzenco\.com/.test(contactPage), "Contact page should not use the old email domain");
 assert(/fetch\("\/api\/inquiry"/.test(siteScript), "Contact form should send JSON to the website inquiry API");
 assert(/response\.ok/.test(siteScript), "Contact form should confirm delivery before tracking success");
-assert(/https:\/\/calendly\.com\/herzenco\/xyren-discover/.test(contactPage), "Contact page should offer direct call scheduling");
+assert(contactPage.includes(bookingUrl), "Contact page should offer direct call scheduling");
 
 for (const campaignPage of campaignPages) {
   assert(/class="campaign-page delivery-map-page"/.test(read(campaignPage)), `${campaignPage} should use the campaign design-system surface`);
@@ -261,12 +301,31 @@ assert(!/\.delivery-close[^}]*background: var\(--coral\)/.test(siteStyles), "Del
 const adLandingPage = read("free-delivery-map/index.html");
 assert(/<link rel="canonical" href="https:\/\/www\.herzenco\.co\/free-delivery-map\/">/.test(adLandingPage), "Ad landing page must self-canonicalize to the lowercase campaign path");
 assert(/<meta property="og:url" content="https:\/\/www\.herzenco\.co\/free-delivery-map\/">/.test(adLandingPage), "Ad landing page og:url must match the ad final URL");
-assert(!/xyren-discover/.test(adLandingPage), "Ad landing page must use the current booking destination");
+assert(adLandingPage.includes(bookingUrl), "Ad landing page must use the current booking destination");
+assert(!/xyren-discover/.test(adLandingPage), "Ad landing page must not use the legacy booking slug");
+for (const campaignPage of campaignPages) {
+  assert(/<meta name="robots" content="noindex, follow">/.test(read(campaignPage)), `${campaignPage} should stay available without being indexed`);
+}
 const sitemapXml = read("sitemap.xml");
-assert(sitemapXml.includes("https://www.herzenco.co/free-delivery-map/"), "Sitemap should list the ad landing page");
+assert(!sitemapXml.includes("https://www.herzenco.co/free-delivery-map/"), "Sitemap should omit the mismatched free-delivery-map slug");
 assert(!sitemapXml.includes("https://www.herzenco.co/FreeDeliveryMap/"), "Sitemap should not list the superseded campaign path");
+assert(sitemapXml.includes("https://www.herzenco.co/privacy-policy/"), "Sitemap should list the privacy policy");
+assert(sitemapXml.includes("https://www.herzenco.co/terms-and-conditions/"), "Sitemap should list the terms and conditions");
 const robotsTxt = read("robots.txt");
 assert(/User-agent: AdsBot-Google\nAllow: \//.test(robotsTxt), "robots.txt should explicitly allow AdsBot-Google");
 assert(/User-agent: AdsBot-Google-Mobile\nAllow: \//.test(robotsTxt), "robots.txt should explicitly allow AdsBot-Google-Mobile");
+
+const binaryExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf", ".zip", ".woff", ".woff2", ".ico"]);
+for (const file of walkRepo(root)) {
+  if (binaryExtensions.has(path.extname(file).toLowerCase())) continue;
+  assert(!read(file).includes(staleEmail), `Stale email domain found in ${file}`);
+}
+
+for (const file of publicFiles.filter((entry) => entry.endsWith(".html"))) {
+  for (const image of read(file).match(/<img\b[^>]*>/gi) || []) {
+    assert(/\balt="[^"]+"/.test(image) && !/\balt=""/.test(image), `${file} image needs descriptive alt text: ${image}`);
+  }
+}
+assert(/alt="Herzen Cortes working with a product team"/.test(adLandingPage), "Delivery Map hero should describe the founder photograph");
 
 console.log(`Verified ${pages.length} pages and ${publicFiles.length} public files.`);

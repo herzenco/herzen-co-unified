@@ -141,7 +141,7 @@ function articleHtml(item, chrome) {
     <meta name="twitter:card" content="${item.heroImageUrl ? "summary_large_image" : "summary"}">
     <link rel="icon" href="/assets/brand/icon.png" type="image/png">
     ${chrome.fontLinks}
-    <link rel="stylesheet" href="/assets/css/styles.css?v=20260814occ1">
+    <link rel="stylesheet" href="/assets/css/styles.css?v=20260917legal1">
     <script type="application/ld+json">${schema}</script>
   </head>
   <body>
@@ -153,7 +153,7 @@ function articleHtml(item, chrome) {
       <div class="container container-narrow">${hero}<div class="prose">${sanitizeMarkdown(item.body)}</div><footer class="content-article-footer"><a class="story-link" href="/resources/">← All resources</a></footer></div>
     </article></main>
     ${chrome.footer}
-    <script src="/assets/js/main.js?v=20260804gtm2"></script>
+    <script src="/assets/js/main.js?v=20260917legal1"></script>
   </body>
 </html>\n`;
 }

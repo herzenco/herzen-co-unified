@@ -1,4 +1,7 @@
 const MIXPANEL_SDK_URL = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
+const PRIVACY_PREFERENCES_KEY = "herzen_privacy_preferences";
+const GOOGLE_TAG_MANAGER_ID = "GTM-K9SZRQ94";
+const GOOGLE_ADS_ID = "AW-11011556680";
 const SCROLL_THRESHOLDS = [25, 50, 75, 100];
 const ACTIVE_TIME_THRESHOLDS = [15, 30, 60, 120];
 
@@ -55,6 +58,20 @@ const loadVercelAnalytics = () => {
       "[Vercel Web Analytics] Failed to load script. Enable Web Analytics for the project and redeploy."
     );
   });
+};
+
+const loadGoogleTracking = async () => {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+  await Promise.all([
+    loadScript(`https://www.googletagmanager.com/gtm.js?id=${GOOGLE_TAG_MANAGER_ID}`),
+    loadScript(`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`),
+  ]);
+  window.gtag = window.gtag || function () {
+    window.dataLayer.push(arguments);
+  };
+  window.gtag("js", new Date());
+  window.gtag("config", GOOGLE_ADS_ID);
 };
 
 const loadMixpanelConfig = async () => {
@@ -228,10 +245,103 @@ const initializeMixpanel = async () => {
   startPageTracking();
 };
 
-initializeMixpanel().catch(() => {
-  console.warn("[Mixpanel] Failed to load analytics.");
-});
-loadVercelAnalytics();
+const readPrivacyPreferences = () => {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(PRIVACY_PREFERENCES_KEY));
+    if (typeof stored?.analytics === "boolean" && typeof stored?.advertising === "boolean") {
+      return stored;
+    }
+  } catch {
+    // Treat missing or malformed preferences as no consent.
+  }
+  return null;
+};
+
+const activateConsentedServices = (preferences) => {
+  if (preferences.analytics) {
+    initializeMixpanel().catch(() => console.warn("[Mixpanel] Failed to load analytics."));
+    loadVercelAnalytics();
+  }
+  if (preferences.advertising) {
+    loadGoogleTracking().catch(() => console.warn("[Google] Failed to load consented tags."));
+  }
+};
+
+const createPrivacyControls = () => {
+  const existingPreferences = readPrivacyPreferences();
+  const panel = document.createElement("section");
+  panel.className = "privacy-panel";
+  panel.hidden = Boolean(existingPreferences);
+  panel.setAttribute("aria-label", "Privacy choices");
+  panel.innerHTML = `
+    <div class="privacy-panel__summary">
+      <strong>Your privacy choices</strong>
+      <p>We use optional analytics to improve the site and optional advertising tools to measure campaigns. You can accept, reject, or choose by category.</p>
+      <p><a href="/privacy-policy/">Privacy Policy</a></p>
+    </div>
+    <div class="privacy-panel__categories" hidden>
+      <label><input type="checkbox" checked disabled> Strictly necessary <span>Required for security and saving your choice.</span></label>
+      <label><input type="checkbox" data-privacy-analytics> Analytics <span>Mixpanel and Vercel Web Analytics.</span></label>
+      <label><input type="checkbox" data-privacy-advertising> Advertising <span>Google Tag Manager and Google Ads.</span></label>
+    </div>
+    <div class="privacy-panel__actions">
+      <button type="button" class="button secondary" data-privacy-reject>Reject non-essential</button>
+      <button type="button" class="button secondary" data-privacy-customize>Customize</button>
+      <button type="button" class="button" data-privacy-accept>Accept all</button>
+      <button type="button" class="button" data-privacy-save hidden>Save choices</button>
+    </div>`;
+  document.body.appendChild(panel);
+
+  const categories = panel.querySelector(".privacy-panel__categories");
+  const customizeButton = panel.querySelector("[data-privacy-customize]");
+  const saveButton = panel.querySelector("[data-privacy-save]");
+  const analyticsInput = panel.querySelector("[data-privacy-analytics]");
+  const advertisingInput = panel.querySelector("[data-privacy-advertising]");
+
+  const savePreferences = (preferences) => {
+    const hadPreferences = Boolean(readPrivacyPreferences());
+    window.localStorage.setItem(PRIVACY_PREFERENCES_KEY, JSON.stringify({
+      ...preferences,
+      updated_at: new Date().toISOString(),
+    }));
+    panel.hidden = true;
+    if (hadPreferences) window.location.reload();
+    else activateConsentedServices(preferences);
+  };
+
+  panel.querySelector("[data-privacy-accept]").addEventListener("click", () => {
+    savePreferences({ analytics: true, advertising: true });
+  });
+  panel.querySelector("[data-privacy-reject]").addEventListener("click", () => {
+    savePreferences({ analytics: false, advertising: false });
+  });
+  customizeButton.addEventListener("click", () => {
+    categories.hidden = false;
+    customizeButton.hidden = true;
+    saveButton.hidden = false;
+    analyticsInput.focus();
+  });
+  saveButton.addEventListener("click", () => {
+    savePreferences({ analytics: analyticsInput.checked, advertising: advertisingInput.checked });
+  });
+
+  document.querySelectorAll("[data-privacy-choices]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const preferences = readPrivacyPreferences() || { analytics: false, advertising: false };
+      analyticsInput.checked = preferences.analytics;
+      advertisingInput.checked = preferences.advertising;
+      categories.hidden = false;
+      customizeButton.hidden = true;
+      saveButton.hidden = false;
+      panel.hidden = false;
+      analyticsInput.focus();
+    });
+  });
+
+  if (existingPreferences) activateConsentedServices(existingPreferences);
+};
+
+createPrivacyControls();
 
 const navToggle = document.querySelector("[data-nav-toggle]");
 const navLinks = document.querySelector("[data-nav-links]");
@@ -424,7 +534,7 @@ document.addEventListener("click", (event) => {
   }
 });
 
-document.querySelectorAll('a[href="/contact/"], a[href^="https://calendly.com/herzenco/xyren-discover"]').forEach((link) => {
+document.querySelectorAll('a[href="/contact/"], a[href^="https://calendly.com/herzenco/"]').forEach((link) => {
   link.addEventListener("click", () => {
     const properties = {
       ...getPageContext(),

@@ -515,7 +515,7 @@ Never commit real values. Required names are documented in `.env.example`.
 2. **Preview deployments lack OCC content variables.** Git-triggered previews fail in `npm run sync-content` because `OCC_CONTENT_API_URL` and `OCC_CONTENT_API_TOKEN` are not configured for Preview.
 3. **The QA workflow may be nonfunctional for the same environment reason.** It pulls Preview configuration and builds the project, so missing OCC/Mixpanel Preview values can block it.
 4. **Apex redirect status is still `307`.** Vercel's domain-level redirect executes before the source-controlled permanent redirect in `vercel.json`. Canonical signals are now correct, but the external redirect is temporary rather than permanent.
-5. **`llms.txt` contains `hello@herzenco.com`.** The rest of the current site and project rules use `hello@herzenco.co`; this appears to be stale public metadata.
+5. **`llms.txt` used the wrong email domain.** The rest of the current site and project rules use `hello@herzenco.co`; the public LLM file had a stale `.com` address.
 6. **Inquiry documentation is stale.** `docs/operational-command-center-inquiry-integration.md` describes a proposed HMAC `/api/v1/inquiries` contract, but the current implementation authenticates with `OCC_INTEGRATION_EMAIL`/`OCC_INTEGRATION_PASSWORD` and posts to OCC `/leads`.
 7. **The analytics tracking plan is incomplete.** `AGENTS.md` lists only five current events, while `assets/js/main.js` implements additional active-time, resource, navigation, outbound, and mobile-menu events.
 8. **`PROJECT-BRIEF.md` describes a separate Herzen Analytics Hub.** It is not the architecture of this static website and can mislead a future agent unless clearly separated or moved.
@@ -525,7 +525,7 @@ Never commit real values. Required names are documented in `.env.example`.
 ## Next Steps (prioritized)
 
 1. Merge or reapply commit `06494b3` onto current `main`, run all tests, deploy, and verify all live Calendly links use `herzen-co-intro-call`.
-2. Correct `llms.txt` from `hello@herzenco.com` to `hello@herzenco.co` and add a regression assertion.
+2. Correct `llms.txt` so its public email uses `hello@herzenco.co` and add a regression assertion.
 3. Update `docs/operational-command-center-inquiry-integration.md` to match the implemented token-authenticated `/auth/token` + `/leads` workflow.
 4. Expand `AGENTS.md` so its Mixpanel tracking plan includes every event currently emitted by `assets/js/main.js`.
 5. Configure Preview-scoped OCC and Mixpanel variables, then verify both Git previews and the `development` QA workflow.
