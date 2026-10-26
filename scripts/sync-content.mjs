@@ -229,13 +229,37 @@ export function contentSyncMode({
   return "required";
 }
 
+async function committedArticlesExist(rootDir, slugs) {
+  if (!slugs.length) return false;
+  const checks = await Promise.all(slugs.map(async (slug) => {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return false;
+    try {
+      await fs.access(path.join(rootDir, "resources", slug, "index.html"));
+      return true;
+    } catch {
+      return false;
+    }
+  }));
+  return checks.every(Boolean);
+}
+
 async function runContentSyncCli() {
-  if (contentSyncMode() === "skip_preview") {
-    console.log("Skipped authenticated OCC content pull for credential-free Preview build.");
-    return;
+  try {
+    if (contentSyncMode() === "skip_preview") {
+      console.log("Skipped authenticated OCC content pull for credential-free Preview build.");
+      return;
+    }
+    const items = await syncContent();
+    console.log(`Generated ${items.length} OCC resource article(s).`);
+  } catch (error) {
+    const rootDir = process.cwd();
+    const slugs = await previousSlugs(rootDir);
+    if (slugs.length > 0 && await committedArticlesExist(rootDir, slugs)) {
+      console.warn(`OCC content sync skipped (${error.message}); preserving committed resource articles.`);
+      return;
+    }
+    throw error;
   }
-  const items = await syncContent();
-  console.log(`Generated ${items.length} OCC resource article(s).`);
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
