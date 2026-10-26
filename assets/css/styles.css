@@ -325,6 +325,7 @@
 }
 
 .featured-story h2 a,
+.article-card h2 a,
 .article-card h3 a { color: inherit; text-decoration: none; }
 
 .featured-story-copy > p {
@@ -399,6 +400,7 @@
   line-height: 1;
 }
 
+.article-card h2,
 .article-card h3 {
   margin: 2rem 0 1rem;
   font-family: var(--font-serif);
@@ -678,7 +680,8 @@ a {
   line-height: 1.1;
 }
 
-.button.secondary {
+.button.secondary,
+.button.button-ghost {
   background: transparent;
   color: var(--ink);
 }
@@ -1662,6 +1665,13 @@ h3 {
   line-height: 1.28;
 }
 
+.price-card h2,
+.faq-item h2,
+.item h2 {
+  font-size: 1.625rem;
+  line-height: 1.28;
+}
+
 a,
 button,
 input,
@@ -1756,13 +1766,15 @@ textarea:focus-visible {
 }
 
 .button.secondary,
-.button.tertiary {
+.button.tertiary,
+.button.button-ghost {
   background: transparent;
   color: var(--ink-900);
 }
 
 .button.secondary:hover,
-.button.tertiary:hover {
+.button.tertiary:hover,
+.button.button-ghost:hover {
   border-color: var(--clay-500);
   color: var(--clay-500);
 }

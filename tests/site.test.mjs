@@ -214,6 +214,7 @@ assert(/\$2,000\/month/.test(homepage), "Homepage description should include the
 assert(/Custom <span>scope<\/span>/.test(homepage), "Custom scope price should keep a space for copy and paste");
 assert(/"contactType": "sales"/.test(homepage), "Homepage organization schema should include a sales contact point");
 assert(/<a class="button" href="\/contact\/">Start a conversation<\/a>/.test(homepage), "Homepage primary CTA should set an accurate contact expectation");
+assert(/class="hero-actions button-row"[\s\S]*class="button button-ghost" href="https:\/\/calendly\.com\/herzenco\/herzen-co-intro-call">Book a call<\/a>/.test(homepage), "Homepage hero should offer a direct booking link");
 assert(homepage.includes(bookingUrl), "Homepage closing band should offer direct booking");
 assert(/mailto:hello@herzenco\.co/.test(homepage), "Homepage should offer a direct email link");
 assert(!/See the primary offer/.test(homepage), "Homepage CTA should be concise and lead-focused");
@@ -239,6 +240,7 @@ assert(/if \(preferences\.analytics\) \{\s*initializeMixpanel\(\)/.test(siteScri
 assert(/loadVercelAnalytics\(\)/.test(siteScript), "Vercel Web Analytics should remain available after analytics consent");
 assert(/if \(preferences\.advertising\) \{\s*loadGoogleTracking\(\)/.test(siteScript), "Google tags should load only after advertising consent");
 assert(/a\[href\^="https:\/\/calendly\.com\/herzenco\/"\]/.test(siteScript), "Lead CTA tracking should include Herzen Co. Calendly links");
+assert(/startsWith\("\/freedeliverymap"\)/.test(siteScript) && /startsWith\("\/free-delivery-map"\)/.test(siteScript), "Campaign page type should include both delivery-map paths");
 assert(!/xyren-discover/.test(siteScript), "Lead CTA tracking should not use the legacy Calendly slug");
 assert(/page_viewed/.test(siteScript), "Mixpanel should track page views");
 assert(/scroll_depth_reached/.test(siteScript), "Mixpanel should track scroll depth");
@@ -278,11 +280,12 @@ assert(resourcesPage.includes(bookingUrl), "Shared footer should offer direct bo
 assert(/mailto:hello@herzenco\.co/.test(resourcesPage), "Shared footer should offer the public email address");
 
 const contactPage = read("contact/index.html");
-const contactMain = contactPage.match(/<main\b[^>]*>[\s\S]*?<\/main>/i)?.[1] || "";
+const contactMain = contactPage.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] || "";
 assert(/action="\/api\/inquiry"/.test(contactPage), "Contact form should submit through the website inquiry endpoint");
 assert(/data-form-status/.test(contactPage), "Contact form should provide an accessible submission status");
 assert(/name="website"/.test(contactPage), "Contact form should include a spam honeypot");
-assert(!/mailto:/i.test(contactMain), "Contact page should keep inquiries inside the website");
+assert(/<a href="mailto:hello@herzenco\.co">hello@herzenco\.co<\/a>/.test(contactMain), "Contact page should show a direct email address beside scheduling");
+assert(/Schedule a call/.test(contactMain), "Contact page should keep direct call scheduling next to the form");
 assert(/hello@herzenco\.co/.test(contactPage), "Contact metadata should use the correct Herzen Co. email address");
 assert(!/hello@herzenco\.com/.test(contactPage), "Contact page should not use the old email domain");
 assert(/fetch\("\/api\/inquiry"/.test(siteScript), "Contact form should send JSON to the website inquiry API");
@@ -327,5 +330,24 @@ for (const file of publicFiles.filter((entry) => entry.endsWith(".html"))) {
   }
 }
 assert(/alt="Herzen Cortes working with a product team"/.test(adLandingPage), "Delivery Map hero should describe the founder photograph");
+
+function headingLevels(html) {
+  return [...html.matchAll(/<h([1-6])\b/gi)].map((match) => Number(match[1]));
+}
+
+for (const page of ["pricing/index.html", "process/index.html", "resources/index.html", "faq/index.html"]) {
+  const levels = headingLevels(read(page));
+  assert(levels[0] === 1, `${page} should start with an H1`);
+  for (let index = 1; index < levels.length; index += 1) {
+    assert(levels[index] <= levels[index - 1] + 1, `${page} should not skip heading levels: ${levels.join(" > ")}`);
+  }
+}
+assert(/<h2><a href="\/resources\/\$\{item\.slug\}\/">/.test(read("scripts/sync-content.mjs")), "Generated resource cards should use H2 titles");
+const articlePage = read("resources/why-content-automation-still-needs-human-approval-gates/index.html");
+assert(/<meta property="og:image" content="https:\/\/www\.herzenco\.co\/assets\/img\/og-default\.jpg">/.test(articlePage), "Published resource article should include the default social image");
+assert(/og-default\.jpg/.test(read("scripts/sync-content.mjs")), "Generated articles without a hero image should use the default social image");
+for (const file of publicFiles.filter((entry) => entry.endsWith(".html"))) {
+  assert(!read(file).includes("\u2014"), `${file} should not use an em dash`);
+}
 
 console.log(`Verified ${pages.length} pages and ${publicFiles.length} public files.`);

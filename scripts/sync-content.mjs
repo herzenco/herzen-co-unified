@@ -94,7 +94,7 @@ function resourceCards(items) {
   const cards = items.map((item, index) => `        <article class="article-card">
           <span class="article-number" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
           <div class="article-meta"><span>${escapeHtml(item.category)}</span><time datetime="${item.publishedAt}">${displayDate(item.publishedAt)}</time></div>
-          <h3><a href="/resources/${item.slug}/">${escapeHtml(item.title)}</a></h3>
+          <h2><a href="/resources/${item.slug}/">${escapeHtml(item.title)}</a></h2>
           <p>${escapeHtml(item.excerpt)}</p>
           <a class="story-link" href="/resources/${item.slug}/">Read article <span aria-hidden="true">→</span></a>
         </article>`).join("\n");
@@ -119,7 +119,7 @@ function articleHtml(item, chrome) {
   } catch {
     // Use the local canonical URL when OCC returns a malformed or external value.
   }
-  const imageMeta = item.heroImageUrl ? `\n    <meta property="og:image" content="${escapeHtml(item.heroImageUrl)}">` : "";
+  const imageMeta = `\n    <meta property="og:image" content="${escapeHtml(item.heroImageUrl || `${SITE_URL}/assets/img/og-default.jpg`)}">`;
   const hero = item.heroImageUrl ? `<figure class="content-hero-image"><img src="${escapeHtml(item.heroImageUrl)}" alt="${escapeHtml(item.heroImageAlt || item.title)}" loading="lazy"></figure>` : "";
   const schema = JSON.stringify({ "@context": "https://schema.org", "@type": "Article", headline: item.title, description: item.seoDescription, datePublished: item.publishedAt, dateModified: item.updatedAt, mainEntityOfPage: canonical, url: canonical, author: { "@type": "Organization", name: item.author }, publisher: { "@type": "Organization", name: "Herzen Co.", url: SITE_URL }, ...(item.heroImageUrl ? { image: item.heroImageUrl } : {}) }).replaceAll("<", "\\u003c");
   return `<!doctype html>
