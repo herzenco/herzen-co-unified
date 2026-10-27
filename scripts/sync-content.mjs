@@ -94,7 +94,7 @@ function resourceCards(items) {
   const cards = items.map((item, index) => `        <article class="article-card">
           <span class="article-number" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
           <div class="article-meta"><span>${escapeHtml(item.category)}</span><time datetime="${item.publishedAt}">${displayDate(item.publishedAt)}</time></div>
-          <h3><a href="/resources/${item.slug}/">${escapeHtml(item.title)}</a></h3>
+          <h2><a href="/resources/${item.slug}/">${escapeHtml(item.title)}</a></h2>
           <p>${escapeHtml(item.excerpt)}</p>
           <a class="story-link" href="/resources/${item.slug}/">Read article <span aria-hidden="true">→</span></a>
         </article>`).join("\n");
@@ -119,7 +119,7 @@ function articleHtml(item, chrome) {
   } catch {
     // Use the local canonical URL when OCC returns a malformed or external value.
   }
-  const imageMeta = item.heroImageUrl ? `\n    <meta property="og:image" content="${escapeHtml(item.heroImageUrl)}">` : "";
+  const imageMeta = `\n    <meta property="og:image" content="${escapeHtml(item.heroImageUrl || `${SITE_URL}/assets/img/og-default.jpg`)}">`;
   const hero = item.heroImageUrl ? `<figure class="content-hero-image"><img src="${escapeHtml(item.heroImageUrl)}" alt="${escapeHtml(item.heroImageAlt || item.title)}" loading="lazy"></figure>` : "";
   const schema = JSON.stringify({ "@context": "https://schema.org", "@type": "Article", headline: item.title, description: item.seoDescription, datePublished: item.publishedAt, dateModified: item.updatedAt, mainEntityOfPage: canonical, url: canonical, author: { "@type": "Organization", name: item.author }, publisher: { "@type": "Organization", name: "Herzen Co.", url: SITE_URL }, ...(item.heroImageUrl ? { image: item.heroImageUrl } : {}) }).replaceAll("<", "\\u003c");
   return `<!doctype html>
@@ -141,7 +141,7 @@ function articleHtml(item, chrome) {
     <meta name="twitter:card" content="${item.heroImageUrl ? "summary_large_image" : "summary"}">
     <link rel="icon" href="/assets/brand/icon.png" type="image/png">
     ${chrome.fontLinks}
-    <link rel="stylesheet" href="/assets/css/styles.css?v=20260814occ1">
+    <link rel="stylesheet" href="/assets/css/styles.css?v=20260917legal1">
     <script type="application/ld+json">${schema}</script>
   </head>
   <body>
@@ -153,7 +153,7 @@ function articleHtml(item, chrome) {
       <div class="container container-narrow">${hero}<div class="prose">${sanitizeMarkdown(item.body)}</div><footer class="content-article-footer"><a class="story-link" href="/resources/">← All resources</a></footer></div>
     </article></main>
     ${chrome.footer}
-    <script src="/assets/js/main.js?v=20260804gtm2"></script>
+    <script src="/assets/js/main.js?v=20260917legal1"></script>
   </body>
 </html>\n`;
 }
@@ -229,13 +229,37 @@ export function contentSyncMode({
   return "required";
 }
 
+async function committedArticlesExist(rootDir, slugs) {
+  if (!slugs.length) return false;
+  const checks = await Promise.all(slugs.map(async (slug) => {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return false;
+    try {
+      await fs.access(path.join(rootDir, "resources", slug, "index.html"));
+      return true;
+    } catch {
+      return false;
+    }
+  }));
+  return checks.every(Boolean);
+}
+
 async function runContentSyncCli() {
-  if (contentSyncMode() === "skip_preview") {
-    console.log("Skipped authenticated OCC content pull for credential-free Preview build.");
-    return;
+  try {
+    if (contentSyncMode() === "skip_preview") {
+      console.log("Skipped authenticated OCC content pull for credential-free Preview build.");
+      return;
+    }
+    const items = await syncContent();
+    console.log(`Generated ${items.length} OCC resource article(s).`);
+  } catch (error) {
+    const rootDir = process.cwd();
+    const slugs = await previousSlugs(rootDir);
+    if (slugs.length > 0 && await committedArticlesExist(rootDir, slugs)) {
+      console.warn(`OCC content sync skipped (${error.message}); preserving committed resource articles.`);
+      return;
+    }
+    throw error;
   }
-  const items = await syncContent();
-  console.log(`Generated ${items.length} OCC resource article(s).`);
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

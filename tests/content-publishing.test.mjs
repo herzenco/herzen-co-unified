@@ -170,7 +170,9 @@ test("generation creates current pages and removes stale generated pages", async
   assert.match(html, /<meta name="occ:content-id" content="22222222-2222-4222-8222-222222222222">/);
   assert.match(html, /<meta name="occ:revision" content="3">/);
   assert.match(html, new RegExp(`<meta name="occ:revision-digest" content="${"a".repeat(64)}">`));
-  assert.match(html, /GTM-K9SZRQ94/);
+  assert.match(html, /\/assets\/js\/main\.js/);
+  assert.doesNotMatch(html, /googletagmanager\.com\/gtm\.js/);
+  assert.match(html, /data-privacy-choices/);
   assert.match(listing, /\/resources\/clearer-product-roadmaps\//);
   assert.match(sitemap, /\/resources\/clearer-product-roadmaps\//);
   await assert.rejects(fs.access(path.join(root, "resources", "stale-article")));

@@ -241,7 +241,7 @@ General conversation CTAs should lead to the on-site contact form:
 High-intent scheduling CTAs should lead to the Herzen Co. Calendly destination:
 
 ```text
-https://calendly.com/herzenco/xyren-discover
+https://calendly.com/herzenco/herzen-co-intro-call
 ```
 
 Recommended scheduling CTAs:
